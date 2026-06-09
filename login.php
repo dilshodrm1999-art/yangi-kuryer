@@ -30,33 +30,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle = 'Kirish';
 require __DIR__ . '/includes/header.php';
 ?>
+<div class="auth-wrap">
 <div class="auth-card">
-    <h1>Kirish</h1>
-    <p class="muted">Hisobingizga kiring.</p>
+    <div class="auth-logo"><?= icon('truck', 26) ?></div>
+    <h1>Xush kelibsiz</h1>
+    <p class="muted" style="margin-bottom:18px">Hisobingizga kiring</p>
 
     <?php foreach ($errors as $err): ?>
-        <div class="alert error"><?= e($err) ?></div>
+        <div class="alert error"><?= icon('x',16) ?><?= e($err) ?></div>
     <?php endforeach; ?>
 
-    <form method="post" class="form">
+    <form method="post">
         <?= csrf_field() ?>
-        <label>Telefon
-            <input type="text" name="phone" value="<?= e($phone) ?>" placeholder="+998901234567" required>
+        <label class="field"><span>Telefon</span>
+            <input type="tel" name="phone" value="<?= e($phone) ?>" inputmode="tel" placeholder="+998901234567" required>
         </label>
-        <label>Parol
+        <label class="field"><span>Parol</span>
             <input type="password" name="password" required>
         </label>
-        <button class="btn primary" type="submit">Kirish</button>
+        <button class="btn primary block">Kirish</button>
     </form>
-    <p class="muted">Hisobingiz yo'qmi? <a href="/register.php">Ro'yxatdan o'tish</a></p>
+    <p class="muted" style="margin-top:14px;text-align:center">Hisobingiz yo'qmi? <a href="/register.php">Ro'yxatdan o'tish</a></p>
 
     <div class="demo-box">
-        <strong>Demo hisoblar (parol: 12345):</strong>
+        <strong>Demo (parol: 12345):</strong>
         <ul>
             <li>Admin: <code>+998900000000</code></li>
             <li>Kuryer: <code>+998901111111</code></li>
             <li>Mijoz: <code>+998903333333</code></li>
         </ul>
     </div>
+</div>
 </div>
 <?php require __DIR__ . '/includes/footer.php'; ?>

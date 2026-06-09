@@ -41,30 +41,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle = 'Ro\'yxatdan o\'tish';
 require __DIR__ . '/includes/header.php';
 ?>
+<div class="auth-wrap">
 <div class="auth-card">
+    <div class="auth-logo"><?= icon('user', 26) ?></div>
     <h1>Ro'yxatdan o'tish</h1>
-    <p class="muted">Yangi mijoz hisobini yarating.</p>
+    <p class="muted" style="margin-bottom:18px">Yangi mijoz hisobini yarating</p>
 
     <?php foreach ($errors as $err): ?>
-        <div class="alert error"><?= e($err) ?></div>
+        <div class="alert error"><?= icon('x',16) ?><?= e($err) ?></div>
     <?php endforeach; ?>
 
-    <form method="post" class="form">
+    <form method="post">
         <?= csrf_field() ?>
-        <label>Ism
+        <label class="field"><span>Ism</span>
             <input type="text" name="name" value="<?= e($name) ?>" required>
         </label>
-        <label>Telefon
-            <input type="text" name="phone" value="<?= e($phone) ?>" placeholder="+998901234567" required>
+        <label class="field"><span>Telefon</span>
+            <input type="tel" name="phone" value="<?= e($phone) ?>" inputmode="tel" placeholder="+998901234567" required>
         </label>
-        <label>Parol
+        <label class="field"><span>Parol</span>
             <input type="password" name="password" required>
         </label>
-        <label>Parolni takrorlang
+        <label class="field"><span>Parolni takrorlang</span>
             <input type="password" name="password2" required>
         </label>
-        <button class="btn primary" type="submit">Ro'yxatdan o'tish</button>
+        <button class="btn primary block">Ro'yxatdan o'tish</button>
     </form>
-    <p class="muted">Hisobingiz bormi? <a href="/login.php">Kirish</a></p>
+    <p class="muted" style="margin-top:14px;text-align:center">Hisobingiz bormi? <a href="/login.php">Kirish</a></p>
+</div>
 </div>
 <?php require __DIR__ . '/includes/footer.php'; ?>

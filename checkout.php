@@ -15,13 +15,22 @@ if (!$cart) {
 $address = trim($_POST['address'] ?? '');
 $phone   = trim($_POST['phone'] ?? '');
 $note    = trim($_POST['note'] ?? '');
-$lat     = $_POST['lat'] !== '' ? (float)$_POST['lat'] : null;
-$lng     = $_POST['lng'] !== '' ? (float)$_POST['lng'] : null;
+$lat     = ($_POST['lat'] ?? '') !== '' ? (float)$_POST['lat'] : null;
+$lng     = ($_POST['lng'] ?? '') !== '' ? (float)$_POST['lng'] : null;
 
 if ($address === '') {
-    $_SESSION['flash'] = 'Manzilni kiriting.';
     redirect('/cart.php');
 }
+
+// Do'kon (olish nuqtasi) sozlamalardan
+$pickupLat = (float)setting('store_lat', 41.311081);
+$pickupLng = (float)setting('store_lng', 69.240562);
+
+// Masofa va yetkazib berish haqi
+$distance = ($lat !== null && $lng !== null)
+    ? haversine_km($pickupLat, $pickupLng, $lat, $lng)
+    : 0.0;
+$fee = delivery_fee($distance);
 
 $ids  = implode(',', array_map('intval', array_keys($cart)));
 $rows = db()->query("SELECT * FROM products WHERE id IN ($ids)")->fetchAll();
@@ -29,17 +38,21 @@ $rows = db()->query("SELECT * FROM products WHERE id IN ($ids)")->fetchAll();
 $pdo = db();
 $pdo->beginTransaction();
 try {
-    $total = 0;
+    $goods = 0;
     foreach ($rows as $r) {
-        $total += (int)$cart[$r['id']] * (float)$r['price'];
+        $goods += (int)$cart[$r['id']] * (float)$r['price'];
     }
+    $total = $goods + $fee;
 
     $stmt = $pdo->prepare(
-        'INSERT INTO orders (customer_id, status, address, lat, lng, phone, note, total)
-         VALUES (?, "new", ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO orders
+            (customer_id, status, address, lat, lng, pickup_lat, pickup_lng,
+             distance_km, delivery_fee, phone, note, total)
+         VALUES (?, "new", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
-        current_user()['id'], $address, $lat, $lng, $phone, $note, $total,
+        current_user()['id'], $address, $lat, $lng, $pickupLat, $pickupLng,
+        $distance, $fee, $phone, $note, $total,
     ]);
     $orderId = (int)$pdo->lastInsertId();
 
@@ -48,9 +61,7 @@ try {
          VALUES (?, ?, ?, ?, ?)'
     );
     foreach ($rows as $r) {
-        $itemStmt->execute([
-            $orderId, $r['id'], $r['name'], $r['price'], (int)$cart[$r['id']],
-        ]);
+        $itemStmt->execute([$orderId, $r['id'], $r['name'], $r['price'], (int)$cart[$r['id']]]);
     }
 
     $pdo->commit();

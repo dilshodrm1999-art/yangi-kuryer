@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/functions.php';
 
-// Admin/kuryer kirsa, o'z paneliga yo'naltiramiz
+// Admin/kuryer kirsa, o'z paneliga
 if (is_logged_in() && current_user()['role'] !== 'customer') {
     redirect(role_home(current_user()['role']));
 }
@@ -26,31 +26,35 @@ $products = $stmt->fetchAll();
 $pageTitle = 'Mahsulotlar';
 require __DIR__ . '/includes/header.php';
 ?>
-<h1 class="page-title">Mahsulotlar</h1>
+<h1 class="page-title">Nimani buyurtma qilamiz? 🍔</h1>
+<p class="page-sub">Tanlang, savatga soling va manzilingizga yetkazib beramiz.</p>
 
-<form class="filters" method="get">
-    <input type="text" name="q" value="<?= e($q) ?>" placeholder="Qidirish...">
-    <select name="cat" onchange="this.form.submit()">
-        <option value="0">Barcha kategoriyalar</option>
-        <?php foreach ($categories as $c): ?>
-            <option value="<?= $c['id'] ?>" <?= $catId === (int)$c['id'] ? 'selected' : '' ?>>
-                <?= e($c['name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-    <button class="btn" type="submit">Qidirish</button>
+<form class="searchbar" method="get">
+    <?= icon('search', 20) ?>
+    <input type="text" name="q" value="<?= e($q) ?>" placeholder="Mahsulot qidirish...">
+    <?php if ($catId): ?><input type="hidden" name="cat" value="<?= $catId ?>"><?php endif; ?>
+    <button class="btn primary sm" type="submit">Qidirish</button>
 </form>
 
+<div class="cat-scroll">
+    <a class="cat-pill <?= $catId === 0 ? 'active' : '' ?>" href="/index.php<?= $q ? '?q='.urlencode($q) : '' ?>">Barchasi</a>
+    <?php foreach ($categories as $c): ?>
+        <a class="cat-pill <?= $catId === (int)$c['id'] ? 'active' : '' ?>"
+           href="?cat=<?= $c['id'] ?><?= $q ? '&q='.urlencode($q) : '' ?>"><?= e($c['name']) ?></a>
+    <?php endforeach; ?>
+</div>
+
 <?php if (!$products): ?>
-    <p class="muted">Mahsulot topilmadi.</p>
+    <div class="card" style="text-align:center;color:var(--muted)">Mahsulot topilmadi 🔍</div>
 <?php endif; ?>
 
 <div class="grid">
     <?php foreach ($products as $p): ?>
         <div class="card product">
-            <div class="product-img" style="background-image:url('<?= e($p['image'] ?: 'https://via.placeholder.com/400x300?text=Mahsulot') ?>')"></div>
-            <div class="product-body">
+            <div class="product-img" style="background-image:url('<?= e($p['image'] ?: 'https://via.placeholder.com/400x300?text=Mahsulot') ?>')">
                 <span class="chip"><?= e($p['category'] ?? 'Boshqa') ?></span>
+            </div>
+            <div class="product-body">
                 <h3><?= e($p['name']) ?></h3>
                 <p class="muted small"><?= e($p['description']) ?></p>
                 <div class="product-foot">
@@ -60,10 +64,10 @@ require __DIR__ . '/includes/header.php';
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="add">
                             <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
-                            <button class="btn primary" type="submit">Savatga +</button>
+                            <button class="add-btn" type="submit" title="Savatga"><?= icon('plus', 20) ?></button>
                         </form>
                     <?php else: ?>
-                        <a class="btn primary" href="/login.php">Savatga +</a>
+                        <a class="add-btn" href="/login.php" title="Kirish"><?= icon('plus', 20) ?></a>
                     <?php endif; ?>
                 </div>
             </div>

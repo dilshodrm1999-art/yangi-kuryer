@@ -61,3 +61,32 @@ assets/css, assets/js
 
 ## Buyurtma jarayoni (status)
 `new` (yangi) → `accepted` (kuryerga tayinlandi) → `on_way` (yo'lda) → `delivered` (yetkazildi) / `cancelled` (bekor)
+
+
+---
+
+## 🆕 v2 yangiliklari
+
+- **Zamonaviy mobil-birinchi dizayn** — inline SVG ikonkalar, pastki navigatsiya (bottom-nav), telefon uchun qulay.
+- **Avto-geolokatsiya** — mijoz buyurtma berishda joylashuvi telefondan avtomatik olinadi (GPS + Nominatim reverse geocoding bilan manzil avto to'ladi).
+- **Jonli kuzatuv (live tracking):**
+  - Mijoz buyurtmasi qabul qilingach, kuryerni xaritada real vaqtda kuzatadi.
+  - Admin barcha faol kuryerlarni jonli xaritada va ularning harakatini ko'radi.
+- **Kuryer balansi** — har bir yetkazilgan buyurtma uchun haq avtomatik kuryer balansiga qo'shiladi. Balans va daromad tarixi sahifasi.
+- **Masofaviy narx tizimi** — admin 1 km uchun narxni (default 8 000 so'm) va minimal haqni sozlaydi. Haq = (ombordan mijozgacha masofa) × km-narx, avtomatik hisoblanadi.
+- **Admin sozlamalari** (`admin/settings.php`) — km-narx, minimal haq, ombor (olish nuqtasi) joylashuvi xaritadan.
+- **Buyurtma bosqichlari** — `new → accepted → picked_up → on_way → delivered`, mijozda bosqichli tracker.
+- **Admin payout** — kuryerga to'lov qilib balansni nollash.
+
+### Yangi fayllar
+```
+api/location_update.php   — kuryer GPS lokatsiyasini yuboradi
+api/order_track.php       — mijoz/admin buyurtma bo'yicha kuryer joyini oladi
+api/couriers_live.php     — admin barcha kuryerlar joylashuvi
+admin/settings.php        — narx va ombor sozlamalari
+courier/balance.php       — kuryer balansi va daromad tarixi
+profile.php               — profil va parol
+assets/js/courier-track.js, track-order.js, admin-map.js
+```
+
+> Eslatma: jonli xarita uchun OpenStreetMap (Leaflet) ishlatiladi — API kalit talab qilmaydi.
