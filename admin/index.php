@@ -10,6 +10,7 @@ $stats = [
     'couriers'  => db()->query("SELECT COUNT(*) FROM users WHERE role='courier'")->fetchColumn(),
     'revenue'   => db()->query("SELECT COALESCE(SUM(total),0) FROM orders WHERE status='delivered'")->fetchColumn(),
     'fees'      => db()->query("SELECT COALESCE(SUM(delivery_fee),0) FROM orders WHERE status='delivered'")->fetchColumn(),
+    'commission'=> db()->query("SELECT COALESCE(SUM(commission),0) FROM orders WHERE status='delivered'")->fetchColumn(),
 ];
 
 $recent = db()->query(
@@ -31,6 +32,7 @@ require __DIR__ . '/../includes/header.php';
     <div class="stat"><div class="si" style="background:#f3e8ff;color:var(--purple)"><?= icon('truck',20) ?></div><div class="stat-num"><?= $stats['active'] ?></div><div class="stat-label">Yo'lda</div></div>
     <div class="stat"><div class="si" style="background:#ecfdf3;color:var(--green)"><?= icon('check',20) ?></div><div class="stat-num"><?= $stats['delivered'] ?></div><div class="stat-label">Yetkazilgan</div></div>
     <div class="stat"><div class="si" style="background:#eff6ff;color:var(--blue)"><?= icon('wallet',20) ?></div><div class="stat-num" style="font-size:17px"><?= money($stats['revenue']) ?></div><div class="stat-label">Tushum</div></div>
+    <div class="stat"><div class="si" style="background:#ecfdf3;color:var(--green)"><?= icon('star',20) ?></div><div class="stat-num" style="font-size:17px"><?= money($stats['commission']) ?></div><div class="stat-label">Admin komissiyasi</div></div>
     <div class="stat"><div class="si"><?= icon('route',20) ?></div><div class="stat-num" style="font-size:17px"><?= money($stats['fees']) ?></div><div class="stat-label">Yetkazish haqi</div></div>
 </div>
 

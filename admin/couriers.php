@@ -37,6 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->prepare('UPDATE users SET balance=0 WHERE id=? AND role="courier"')
             ->execute([(int)$_POST['id']]);
         $msg = 'To\'lov amalga oshirildi (balans nollandi).';
+    } elseif ($action === 'topup') {
+        // Balansni to'ldirish (admin qo'lda pul qo'shadi)
+        $amount = (float)($_POST['amount'] ?? 0);
+        if ($amount > 0) {
+            db()->prepare('UPDATE users SET balance = balance + ? WHERE id=? AND role="courier"')
+                ->execute([$amount, (int)$_POST['id']]);
+            $msg = 'Balans to\'ldirildi: +' . money($amount);
+        }
     }
 }
 
@@ -81,17 +89,24 @@ require __DIR__ . '/../includes/header.php';
                     <td style="font-weight:700;color:var(--green)"><?= money($c['balance']) ?></td>
                     <td><?= $c['is_active'] ? '🟢 Faol' : '🔴 Blok' ?></td>
                     <td class="row-actions">
+                        <form method="post" class="inline-form" style="gap:4px">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="topup">
+                            <input type="hidden" name="id" value="<?= $c['id'] ?>">
+                            <input type="number" name="amount" placeholder="summa" step="1000" min="0" style="width:92px;padding:7px 9px" required>
+                            <button class="btn sm primary" title="Balansni to'ldirish"><?= icon('plus',15) ?></button>
+                        </form>
                         <form method="post" data-confirm="<?= e($c['name']) ?> ga <?= money($c['balance']) ?> to'lansinmi? Balans nollanadi.">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="payout">
                             <input type="hidden" name="id" value="<?= $c['id'] ?>">
-                            <button class="btn sm" title="To'lash" <?= $c['balance'] <= 0 ? 'disabled' : '' ?>><?= icon('wallet',15) ?></button>
+                            <button class="btn sm" title="To'lab, nollash" <?= $c['balance'] <= 0 ? 'disabled' : '' ?>><?= icon('wallet',15) ?></button>
                         </form>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="toggle">
                             <input type="hidden" name="id" value="<?= $c['id'] ?>">
-                            <button class="btn sm"><?= $c['is_active'] ? icon('x',15) : icon('check',15) ?></button>
+                            <button class="btn sm" title="Faollik"><?= $c['is_active'] ? icon('x',15) : icon('check',15) ?></button>
                         </form>
                     </td>
                 </tr>

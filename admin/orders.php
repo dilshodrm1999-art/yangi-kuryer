@@ -22,8 +22,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status  = $_POST['status'] ?? '';
         $allowed = ['new','accepted','picked_up','on_way','delivered','cancelled'];
         if (in_array($status, $allowed, true)) {
-            db()->prepare('UPDATE orders SET status=? WHERE id=?')->execute([$status, $orderId]);
-            $msg = "Status yangilandi.";
+            $pdo = db();
+            $pdo->beginTransaction();
+            try {
+                $stmt = $pdo->prepare('SELECT * FROM orders WHERE id=? FOR UPDATE');
+                $stmt->execute([$orderId]);
+                $order = $stmt->fetch();
+                if ($order) {
+                    $pdo->prepare('UPDATE orders SET status=? WHERE id=?')->execute([$status, $orderId]);
+                    if ($status === 'delivered') {
+                        settle_delivery($pdo, $order);
+                    }
+                }
+                $pdo->commit();
+                $msg = "Status yangilandi.";
+            } catch (Throwable $ex) {
+                $pdo->rollBack();
+                $msg = "Xatolik yuz berdi.";
+            }
         }
     }
 }

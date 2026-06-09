@@ -6,7 +6,9 @@
         <a href="<?= e($it[0]) ?>" class="<?= str_contains($cur, ltrim($it[0], '/')) ? 'active' : '' ?>">
             <span class="bn-ic">
                 <?= icon($it[1], 22) ?>
-                <?php if (!empty($it[3])): ?><i class="dot"><?= (int)$it[3] ?></i><?php endif; ?>
+                <?php if ($it[1] === 'cart'): ?>
+                    <i class="dot cart-badge" <?= empty($it[3]) ? 'style="display:none"' : '' ?>><?= (int)($it[3] ?? 0) ?></i>
+                <?php elseif (!empty($it[3])): ?><i class="dot"><?= (int)$it[3] ?></i><?php endif; ?>
             </span>
             <span class="bn-label"><?= e($it[2]) ?></span>
         </a>

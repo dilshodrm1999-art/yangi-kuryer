@@ -60,12 +60,7 @@ require __DIR__ . '/includes/header.php';
                 <div class="product-foot">
                     <span class="price"><?= money($p['price']) ?></span>
                     <?php if (is_logged_in()): ?>
-                        <form method="post" action="/cart.php">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="add">
-                            <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
-                            <button class="add-btn" type="submit" title="Savatga"><?= icon('plus', 20) ?></button>
-                        </form>
+                        <button class="add-btn js-add" type="button" data-product-id="<?= $p['id'] ?>" title="Savatga"><?= icon('plus', 20) ?></button>
                     <?php else: ?>
                         <a class="add-btn" href="/login.php" title="Kirish"><?= icon('plus', 20) ?></a>
                     <?php endif; ?>

@@ -39,6 +39,7 @@ if ($u) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#ff6b35">
+    <?php if ($u): ?><meta name="csrf" content="<?= csrf_token() ?>"><?php endif; ?>
     <title><?= e($pageTitle) ?> · Dostavka</title>
     <link rel="stylesheet" href="/assets/css/style.css">
 </head>
@@ -55,7 +56,9 @@ if ($u) {
                 <?php foreach ($navItems as $it): ?>
                     <a href="<?= e($it[0]) ?>" class="<?= str_contains($cur, ltrim($it[0], '/')) ? 'active' : '' ?>">
                         <?= icon($it[1], 18) ?><span><?= e($it[2]) ?></span>
-                        <?php if (!empty($it[3])): ?><i class="dot"><?= (int)$it[3] ?></i><?php endif; ?>
+                        <?php if ($it[1] === 'cart'): ?>
+                            <i class="dot cart-badge" <?= empty($it[3]) ? 'style="display:none"' : '' ?>><?= (int)($it[3] ?? 0) ?></i>
+                        <?php elseif (!empty($it[3])): ?><i class="dot"><?= (int)$it[3] ?></i><?php endif; ?>
                     </a>
                 <?php endforeach; ?>
             </nav>

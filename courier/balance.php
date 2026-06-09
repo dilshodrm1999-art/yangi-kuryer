@@ -7,8 +7,8 @@ $me = current_user();
 $stats = db()->prepare(
     "SELECT
         COUNT(*) AS delivered_count,
-        COALESCE(SUM(delivery_fee),0) AS total_earned,
-        COALESCE(SUM(CASE WHEN DATE(updated_at)=CURDATE() THEN delivery_fee ELSE 0 END),0) AS today_earned,
+        COALESCE(SUM(delivery_fee - commission),0) AS total_earned,
+        COALESCE(SUM(CASE WHEN DATE(updated_at)=CURDATE() THEN delivery_fee - commission ELSE 0 END),0) AS today_earned,
         COALESCE(SUM(distance_km),0) AS total_km
      FROM orders WHERE courier_id=? AND status='delivered'"
 );
@@ -17,7 +17,7 @@ $s = $stats->fetch();
 
 // Yetkazilgan buyurtmalar (daromad tarixi)
 $hist = db()->prepare(
-    "SELECT o.id, o.address, o.distance_km, o.delivery_fee, o.updated_at, u.name AS customer
+    "SELECT o.id, o.address, o.distance_km, o.delivery_fee, o.commission, o.updated_at, u.name AS customer
      FROM orders o JOIN users u ON u.id=o.customer_id
      WHERE o.courier_id=? AND o.status='delivered'
      ORDER BY o.updated_at DESC LIMIT 50"
@@ -48,7 +48,7 @@ require __DIR__ . '/../includes/header.php';
 <?php else: ?>
 <div class="table-wrap">
     <table class="table">
-        <thead><tr><th>#</th><th>Mijoz</th><th>Manzil</th><th>Masofa</th><th>Daromad</th><th>Sana</th></tr></thead>
+        <thead><tr><th>#</th><th>Mijoz</th><th>Manzil</th><th>Masofa</th><th>Daromad (komissiyasiz)</th><th>Sana</th></tr></thead>
         <tbody>
         <?php foreach ($history as $h): ?>
             <tr>
@@ -56,7 +56,7 @@ require __DIR__ . '/../includes/header.php';
                 <td><?= e($h['customer']) ?></td>
                 <td><?= e($h['address']) ?></td>
                 <td><?= e($h['distance_km']) ?> km</td>
-                <td style="color:var(--green);font-weight:700"><?= money($h['delivery_fee']) ?></td>
+                <td style="color:var(--green);font-weight:700"><?= money($h['delivery_fee'] - $h['commission']) ?></td>
                 <td class="muted small"><?= e(date('d.m.Y H:i', strtotime($h['updated_at']))) ?></td>
             </tr>
         <?php endforeach; ?>

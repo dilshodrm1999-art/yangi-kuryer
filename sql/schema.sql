@@ -92,6 +92,7 @@ CREATE TABLE orders (
     pickup_lng    DECIMAL(10,7) NULL,
     distance_km   DECIMAL(6,2)  NOT NULL DEFAULT 0,
     delivery_fee  DECIMAL(12,2) NOT NULL DEFAULT 0,
+    commission    DECIMAL(12,2) NOT NULL DEFAULT 0,
     phone         VARCHAR(20)   NULL,
     note          TEXT          NULL,
     total         DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -126,7 +127,8 @@ INSERT INTO settings (skey, svalue) VALUES
   ('store_name',   'Asosiy ombor'),
   ('store_lat',    '41.3110810'),
   ('store_lng',    '69.2405620'),
-  ('min_fee',      '5000');
+  ('min_fee',      '5000'),
+  ('commission_percent', '20');
 
 -- Parol barchasi uchun: "12345"
 SET @pw = '$2y$12$Rhplui5xoPJ30sUK1J28i.Q0avU/nqoE9q7J/41aK2EUrzAtzX.VS';

@@ -7,6 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     check_csrf();
     set_setting('price_per_km', (string)max(0, (int)($_POST['price_per_km'] ?? 8000)));
     set_setting('min_fee',      (string)max(0, (int)($_POST['min_fee'] ?? 0)));
+    set_setting('commission_percent', (string)min(100, max(0, (int)($_POST['commission_percent'] ?? 0))));
     set_setting('store_name',   trim($_POST['store_name'] ?? 'Ombor'));
     if (($_POST['store_lat'] ?? '') !== '') set_setting('store_lat', (string)(float)$_POST['store_lat']);
     if (($_POST['store_lng'] ?? '') !== '') set_setting('store_lng', (string)(float)$_POST['store_lng']);
@@ -17,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $perKm     = (float)setting('price_per_km', 8000);
 $minFee     = (float)setting('min_fee', 0);
+$commission = (float)setting('commission_percent', 20);
 $storeName = setting('store_name', 'Ombor');
 $storeLat  = (float)setting('store_lat', 41.311081);
 $storeLng  = (float)setting('store_lng', 69.240562);
@@ -40,7 +42,10 @@ require __DIR__ . '/../includes/header.php';
             <label class="field"><span>Minimal yetkazib berish haqi (so'm)</span>
                 <input type="number" name="min_fee" value="<?= (int)$minFee ?>" min="0" step="500">
             </label>
-            <div class="alert info"><?= icon('route',16) ?> Haq = masofa (km) × 1km narxi. Masofa mahsulot olinadigan ombordan mijozgacha hisoblanadi.</div>
+            <label class="field"><span>Admin komissiyasi (%) — har buyurtmadan</span>
+                <input type="number" name="commission_percent" value="<?= (int)$commission ?>" min="0" max="100" step="1">
+            </label>
+            <div class="alert info"><?= icon('route',16) ?> Haq = masofa (km) × 1km narxi. Komissiya yetkazish haqidan ushlanadi: kuryer (haq − komissiya), admin (komissiya).</div>
             <label class="field"><span>Ombor nomi</span>
                 <input type="text" name="store_name" value="<?= e($storeName) ?>">
             </label>

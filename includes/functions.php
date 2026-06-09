@@ -202,6 +202,32 @@ function delivery_fee(float $distanceKm): float
     return round(max($fee, $min), -2); // 100 gacha yaxlitlash
 }
 
+/**
+ * Buyurtma yetkazilganda hisob-kitob (idempotent).
+ *  - admin komissiyasini hisoblaydi (commission_percent)
+ *  - kuryer balansiga (yetkazish haqi - komissiya) qo'shadi
+ *  - paid_to_courier flag bilan takror to'lashdan saqlaydi
+ * $pdo ochiq tranzaksiya ichida chaqirilishi kerak.
+ */
+function settle_delivery(PDO $pdo, array $order): void
+{
+    if (!empty($order['paid_to_courier'])) {
+        return; // allaqachon hisoblangan
+    }
+    $pct        = (float)setting('commission_percent', 0);
+    $fee        = (float)$order['delivery_fee'];
+    $commission = round($fee * $pct / 100, -2);          // admin ulushi
+    $courierEarn = max(0, $fee - $commission);            // kuryer ulushi
+
+    $pdo->prepare('UPDATE orders SET paid_to_courier = 1, commission = ? WHERE id = ?')
+        ->execute([$commission, $order['id']]);
+
+    if (!empty($order['courier_id'])) {
+        $pdo->prepare('UPDATE users SET balance = balance + ? WHERE id = ?')
+            ->execute([$courierEarn, $order['courier_id']]);
+    }
+}
+
 /* ---------- Ikonkalar (inline SVG, zamonaviy) ---------- */
 
 function icon(string $name, int $size = 22): string
