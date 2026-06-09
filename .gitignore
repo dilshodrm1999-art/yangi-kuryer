@@ -1,0 +1,15 @@
+# PHP
+vendor/
+*.log
+
+# Muhit
+.env
+config/local.php
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
