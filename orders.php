@@ -60,6 +60,9 @@ require __DIR__ . '/includes/header.php';
         </div>
         <?php endif; ?>
 
+        <?php if (!empty($o['pickup_name'])): ?>
+            <div class="order-line"><?= icon('store',16) ?><span><?= e($o['pickup_name']) ?></span></div>
+        <?php endif; ?>
         <div class="order-line"><?= icon('pin',16) ?><span><?= e($o['address']) ?></span></div>
 
         <ul class="order-items">
@@ -70,7 +73,8 @@ require __DIR__ . '/includes/header.php';
 
         <div class="order-meta">
             <?php if ($o['distance_km'] > 0): ?><span class="tag dist"><?= icon('route',13) ?> <?= e($o['distance_km']) ?> km</span><?php endif; ?>
-            <span class="tag fee"><?= icon('truck',13) ?> Yetkazish: <?= money($o['delivery_fee']) ?></span>
+            <span class="tag <?= ($o['delivery_zone'] ?? 'in') === 'out' ? 'zone-out' : 'zone-in' ?>"><?= e(zone_label($o['delivery_zone'] ?? 'in')) ?></span>
+            <span class="tag fee"><?= icon('truck',13) ?> Yo'l haqi: <?= money($o['delivery_fee']) ?></span>
         </div>
 
         <?php if ($active && $o['courier_name']): ?>

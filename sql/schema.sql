@@ -158,6 +158,8 @@ CREATE TABLE orders (
     lng           DECIMAL(10,7) NULL,
     pickup_lat    DECIMAL(10,7) NULL,
     pickup_lng    DECIMAL(10,7) NULL,
+    pickup_name   VARCHAR(150)  NULL,
+    pickup_address VARCHAR(255) NULL,
     distance_km   DECIMAL(6,2)  NOT NULL DEFAULT 0,
     delivery_zone VARCHAR(12)   NOT NULL DEFAULT 'in',
     delivery_fee  DECIMAL(12,2) NOT NULL DEFAULT 0,

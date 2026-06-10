@@ -55,6 +55,11 @@ $priceOut = (float)setting('price_out_city', 15000);
 $minFee   = (float)setting('min_fee', 0);
 $cityPoly = setting('city_polygon', '[]');
 
+// Olish nuqtasi (do'kon manzili) — savatdagi do'konga qarab aniqlanadi
+$pickup    = $cart ? resolve_pickup(array_keys($cart)) : ['lat'=>$storeLat,'lng'=>$storeLng,'name'=>setting('store_name','Ombor'),'address'=>''];
+$pickupLat = $pickup['lat'] ?? $storeLat;
+$pickupLng = $pickup['lng'] ?? $storeLng;
+
 $pageTitle = 'Savatcha';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -112,6 +117,14 @@ require __DIR__ . '/includes/header.php';
     <!-- Buyurtma berish -->
     <div class="checkout card">
         <h2 style="margin-bottom:14px"><?= icon('pin',18) ?> Yetkazib berish</h2>
+
+        <?php if (!empty($pickup['name'])): ?>
+        <div class="pickup-line">
+            <?= icon('store',16) ?>
+            <span>Olish nuqtasi: <strong><?= e($pickup['name']) ?></strong><?= $pickup['address'] ? ' · '.e($pickup['address']) : '' ?></span>
+        </div>
+        <?php endif; ?>
+
         <form method="post" action="/checkout.php" id="checkoutForm">
             <?= csrf_field() ?>
 
@@ -139,8 +152,9 @@ require __DIR__ . '/includes/header.php';
             </div>
 
             <div class="summary-row"><span>Mahsulotlar</span><strong><?= money($total) ?></strong></div>
-            <div class="summary-row"><span>Yetkazib berish <small id="distTxt"></small></span><strong id="feeTxt">—</strong></div>
+            <div class="summary-row"><span>Yo'l (do'kondan manzilgacha) <small id="distTxt"></small></span><strong id="feeTxt">—</strong></div>
             <div class="summary-total"><span>Jami</span><strong id="grandTxt"><?= money($total) ?></strong></div>
+            <p class="muted small" id="feeHint" style="margin-top:6px"><?= icon('route',13) ?> Manzilni xaritada belgilang — yo'l haqi avtomatik hisoblanadi.</p>
 
             <button class="btn primary block" type="submit"><?= icon('check',18) ?> Buyurtma berish</button>
         </form>
@@ -152,12 +166,14 @@ require __DIR__ . '/includes/header.php';
 <script>
 // Yetkazib berish zonasi (shahar ichi/tashqarisi) — xaritada poligon ko'rsatiladi
 window.CITY_POLYGON = <?= $cityPoly ?: '[]' ?>;
+// Olish nuqtasi (do'kon) koordinatasi va nomi — xaritada ko'rsatiladi
+window.PICKUP = {lat: <?= $pickupLat ?>, lng: <?= $pickupLng ?>, name: <?= json_encode($pickup['name'] ?? 'Do\'kon', JSON_UNESCAPED_UNICODE) ?>};
 </script>
 <script src="/assets/js/map.js"></script>
 <script>
-// Yetkazib berish haqini jonli hisoblash (zona + masofa * km-narx)
+// Yetkazib berish haqini jonli hisoblash (do'kon manzili -> mijoz manzili)
 (function(){
-  var STORE=[<?= $storeLat ?>,<?= $storeLng ?>];
+  var STORE=[window.PICKUP.lat, window.PICKUP.lng];
   var PRICE_IN=<?= (int)$priceIn ?>, PRICE_OUT=<?= (int)$priceOut ?>, MIN_FEE=<?= (int)$minFee ?>;
   var GOODS=<?= (int)$total ?>;
   var POLY=window.CITY_POLYGON||[];
@@ -185,6 +201,8 @@ window.CITY_POLYGON = <?= $cityPoly ?: '[]' ?>;
     document.getElementById('distTxt').textContent='('+km.toFixed(1)+' km · '+zoneTxt+')';
     document.getElementById('feeTxt').textContent=fmt(fee);
     document.getElementById('grandTxt').textContent=fmt(GOODS+fee);
+    var hint=document.getElementById('feeHint');
+    if(hint) hint.innerHTML='📍 '+window.PICKUP.name+' → manzil: <strong>'+km.toFixed(1)+' km</strong>, '+zoneTxt+'. 1 km = '+fmt(perKm);
   };
 })();
 </script>

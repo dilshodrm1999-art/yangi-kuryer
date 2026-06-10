@@ -442,6 +442,46 @@ function delivery_fee(float $distanceKm, string $zone = 'in'): float
     return round(max($fee, $min), -2); // 100 gacha yaxlitlash
 }
 
+/**
+ * Savatdagi mahsulotlar bo'yicha "olish nuqtasi" (pickup) ni aniqlash.
+ * Mahsulotlar do'konga bog'langan bo'lsa — o'sha do'kon manzili/koordinatasi.
+ * Aks holda sozlamalardagi umumiy ombor ishlatiladi.
+ *
+ * $productIds - savatdagi mahsulot id lari.
+ * Qaytaradi: ['lat'=>?, 'lng'=>?, 'name'=>?, 'address'=>?]
+ */
+function resolve_pickup(array $productIds): array
+{
+    $fallback = [
+        'lat'     => setting('store_lat', null) !== null ? (float)setting('store_lat') : null,
+        'lng'     => setting('store_lng', null) !== null ? (float)setting('store_lng') : null,
+        'name'    => setting('store_name', 'Ombor'),
+        'address' => setting('store_name', 'Ombor'),
+    ];
+    $ids = array_values(array_filter(array_map('intval', $productIds)));
+    if (!$ids) {
+        return $fallback;
+    }
+    $in = implode(',', $ids);
+    // Savatdagi birinchi (koordinatasi bor) do'konni olish nuqtasi sifatida olamiz
+    $row = db()->query(
+        "SELECT s.name, s.address, s.lat, s.lng
+         FROM products p JOIN stores s ON s.id = p.store_id
+         WHERE p.id IN ($in) AND s.lat IS NOT NULL AND s.lng IS NOT NULL
+         ORDER BY p.id LIMIT 1"
+    )->fetch();
+
+    if ($row) {
+        return [
+            'lat'     => (float)$row['lat'],
+            'lng'     => (float)$row['lng'],
+            'name'    => $row['name'],
+            'address' => $row['address'] ?: $row['name'],
+        ];
+    }
+    return $fallback;
+}
+
 /** Mahsulot uchun yakuniy chegirma foizi (mahsulot yoki do'kon — kattasi) */
 function product_discount(array $product): float
 {

@@ -186,3 +186,25 @@ Yoki **phpMyAdmin → Import** orqali shu faylni yuklang.
 +998904444444  — Do'kon egasi (Oqtepa Lavash)
 +998905555555  — Do'kon egasi (Evos Burger)
 ```
+
+
+---
+
+## 🆕 v6 yangiliklari — Yo'l haqi do'kon manzilidan hisoblanadi
+
+Endi yetkazib berish narxi **umumiy ombordan emas, balki aniq do'kon manzilidan** mijoz manzcornergacha hisoblanadi va narx **oldindan** ko'rinadi.
+
+### 🛣️ Mijoz uchun (savatcha)
+- Savatda **"Olish nuqtasi: do'kon nomi + manzili"** ko'rsatiladi.
+- Xaritada 🏪 do'kon nuqtasi va 🔵 do'kon→manzil yo'l chizig'i chiziladi.
+- Mijoz manzilni belgilashi bilan: **masofa (km)**, **zona** (shahar ichi/tashqarisi), **1 km narxi** va **jami yo'l haqi** jonli ko'rinadi.
+
+### 🛵 Kuryer uchun
+- Buyurtma kartasida **olish nuqtasi (do'kon)** va **yetkazish manzili** alohida ko'rinadi.
+- "Yo'l ko'rsatish" tugmasi endi **do'kon → mijoz** marshrutini ochadi.
+- Daromad (yo'l haqi − komissiya) aniq ko'rsatiladi.
+
+### Texnik o'zgarishlar
+- `resolve_pickup()` — savatdagi mahsulot do'koniga qarab olish nuqtasini aniqlaydi (do'kon koordinatasi bo'lmasa umumiy omborga qaytadi).
+- `orders` jadvaliga `pickup_name`, `pickup_address` ustunlari qo'shildi.
+- Masofa har doim **olish nuqtasidan** (do'kon yoki ombor) hisoblanadi — mijozga ham, kuryerga ham bir xil narx ko'rinadi.

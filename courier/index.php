@@ -98,7 +98,10 @@ function courier_card(array $o, array $items, string $mode): void { ?>
             <strong>#<?= $o['id'] ?> · <?= e($o['customer_name']) ?></strong>
             <span class="status" style="background:<?= status_color($o['status']) ?>"><?= e(status_label($o['status'])) ?></span>
         </div>
-        <div class="order-line"><?= icon('pin',16) ?><span><strong><?= e($o['address']) ?></strong></span></div>
+        <?php if (!empty($o['pickup_name'])): ?>
+            <div class="order-line"><?= icon('store',16) ?><span>Olish: <strong><?= e($o['pickup_name']) ?></strong><?= $o['pickup_address'] ? ' · '.e($o['pickup_address']) : '' ?></span></div>
+        <?php endif; ?>
+        <div class="order-line"><?= icon('pin',16) ?><span>Manzil: <strong><?= e($o['address']) ?></strong></span></div>
         <?php if ($mode === 'mine'): ?>
             <div class="order-line"><?= icon('phone',16) ?><a href="tel:<?= e($o['phone']) ?>"><?= e($o['phone']) ?></a></div>
         <?php endif; ?>
@@ -112,7 +115,8 @@ function courier_card(array $o, array $items, string $mode): void { ?>
 
         <div class="order-meta">
             <?php if ($o['distance_km'] > 0): ?><span class="tag dist"><?= icon('route',13) ?> <?= e($o['distance_km']) ?> km</span><?php endif; ?>
-            <span class="tag fee"><?= icon('wallet',13) ?> Daromad: <?= money($o['delivery_fee']) ?></span>
+            <span class="tag <?= ($o['delivery_zone'] ?? 'in') === 'out' ? 'zone-out' : 'zone-in' ?>"><?= e(zone_label($o['delivery_zone'] ?? 'in')) ?></span>
+            <span class="tag fee"><?= icon('wallet',13) ?> Daromad: <?= money((float)$o['delivery_fee'] - (float)($o['commission'] ?? 0)) ?></span>
         </div>
 
         <?php if ($mode === 'available'): ?>
@@ -125,8 +129,8 @@ function courier_card(array $o, array $items, string $mode): void { ?>
         <?php else: ?>
             <?php if ($o['lat'] && $o['lng']): ?>
                 <a class="btn block" target="_blank"
-                   href="https://www.google.com/maps/dir/?api=1&destination=<?= e($o['lat']) ?>,<?= e($o['lng']) ?>">
-                   <?= icon('nav',16) ?> Yo'l ko'rsatish
+                   href="https://www.google.com/maps/dir/?api=1<?= ($o['pickup_lat'] && $o['pickup_lng']) ? '&origin='.e($o['pickup_lat']).','.e($o['pickup_lng']) : '' ?>&destination=<?= e($o['lat']) ?>,<?= e($o['lng']) ?>">
+                   <?= icon('nav',16) ?> Yo'l ko'rsatish<?= ($o['pickup_lat'] && $o['pickup_lng']) ? ' (do\'kon → mijoz)' : '' ?>
                 </a>
             <?php endif; ?>
             <div class="order-actions">

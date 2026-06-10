@@ -22,13 +22,15 @@ if ($address === '') {
     redirect('/cart.php');
 }
 
-// Do'kon (olish nuqtasi) sozlamalardan
-$pickupLat = (float)setting('store_lat', 41.311081);
-$pickupLng = (float)setting('store_lng', 69.240562);
+// Olish nuqtasi (do'kon manzili) — savatdagi do'konga qarab aniqlanadi.
+// Mahsulot do'konga bog'langan bo'lsa, o'sha do'kon koordinatasidan hisoblanadi.
+$pickup    = resolve_pickup(array_keys($cart));
+$pickupLat = $pickup['lat'] ?? (float)setting('store_lat', 41.311081);
+$pickupLng = $pickup['lng'] ?? (float)setting('store_lng', 69.240562);
 
-// Zona (shahar ichi / tashqarisi) va masofa
+// Zona (shahar ichi / tashqarisi) va masofa (do'kondan mijozgacha)
 $zone = delivery_zone($lat, $lng);
-$distance = ($lat !== null && $lng !== null)
+$distance = ($lat !== null && $lng !== null && $pickupLat !== null && $pickupLng !== null)
     ? haversine_km($pickupLat, $pickupLng, $lat, $lng)
     : 0.0;
 $fee = delivery_fee($distance, $zone);
@@ -70,12 +72,13 @@ try {
 
     $stmt = $pdo->prepare(
         'INSERT INTO orders
-            (customer_id, status, address, lat, lng, pickup_lat, pickup_lng,
+            (customer_id, status, address, lat, lng, pickup_lat, pickup_lng, pickup_name, pickup_address,
              distance_km, delivery_zone, delivery_fee, phone, note, total)
-         VALUES (?, "new", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+         VALUES (?, "new", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         current_user()['id'], $address, $lat, $lng, $pickupLat, $pickupLng,
+        $pickup['name'] ?? null, $pickup['address'] ?? null,
         $distance, $zone, $fee, $phone, $note, $total,
     ]);
     $orderId = (int)$pdo->lastInsertId();

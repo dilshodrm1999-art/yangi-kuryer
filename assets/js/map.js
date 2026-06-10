@@ -21,6 +21,24 @@
     } catch (e) {}
   }
 
+  // Olish nuqtasi (do'kon) markeri + yo'l chizig'i
+  var pickupMarker = null, routeLine = null;
+  if (window.PICKUP && window.PICKUP.lat && window.PICKUP.lng) {
+    var storeIcon = L.divIcon({ className: 'emoji-marker', html: '🏪', iconSize: [30, 30] });
+    pickupMarker = L.marker([window.PICKUP.lat, window.PICKUP.lng], { icon: storeIcon, title: window.PICKUP.name })
+      .addTo(map).bindPopup('🏪 ' + (window.PICKUP.name || 'Do\'kon'));
+  }
+
+  // Do'kondan mijozgacha yo'l chizig'ini yangilash
+  function drawRoute(lat, lng) {
+    if (!window.PICKUP || !window.PICKUP.lat) return;
+    var pts = [[window.PICKUP.lat, window.PICKUP.lng], [lat, lng]];
+    if (routeLine) { routeLine.setLatLngs(pts); }
+    else {
+      routeLine = L.polyline(pts, { color: '#2563eb', weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(map);
+    }
+  }
+
   var marker = null;
   var latInput = document.getElementById('lat');
   var lngInput = document.getElementById('lng');
@@ -45,6 +63,7 @@
     latInput.value = lat.toFixed(7);
     lngInput.value = lng.toFixed(7);
     if (coordsEl) coordsEl.textContent = '📍 ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+    drawRoute(lat, lng);
     if (typeof window.onLocationChange === 'function') window.onLocationChange(lat, lng);
   }
 
