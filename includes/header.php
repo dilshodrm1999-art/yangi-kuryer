@@ -22,6 +22,13 @@ if ($u) {
             ['/courier/balance.php', 'wallet', 'Balans'],
             ['/profile.php',         'user',   'Profil'],
         ];
+    } elseif ($u['role'] === 'store') {
+        $navItems = [
+            ['/store/index.php',    'dashboard','Panel'],
+            ['/store/products.php', 'package',  'Mahsulot'],
+            ['/store/sections.php', 'layers',   'Bo\'limlar'],
+            ['/store/profile.php',  'store',    'Do\'kon'],
+        ];
     } elseif ($u['role'] === 'admin') {
         $navItems = [
             ['/admin/index.php',    'dashboard','Panel'],

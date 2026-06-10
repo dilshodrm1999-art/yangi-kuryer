@@ -156,8 +156,42 @@ function role_home(string $role): string
     return match ($role) {
         'admin'   => '/admin/index.php',
         'courier' => '/courier/index.php',
+        'store'   => '/store/index.php',
         default   => '/index.php',
     };
+}
+
+/* ---------- Do'kon egasi (store owner) ---------- */
+
+/** Joriy foydalanuvchining do'koni (role='store' uchun). Topilmasa null. */
+function current_store(): ?array
+{
+    $u = current_user();
+    if (!$u || $u['role'] !== 'store') {
+        return null;
+    }
+    static $store = null;
+    if ($store === null) {
+        $stmt = db()->prepare('SELECT * FROM stores WHERE owner_id = ? LIMIT 1');
+        $stmt->execute([$u['id']]);
+        $store = $stmt->fetch() ?: null;
+    }
+    return $store;
+}
+
+/**
+ * Do'kon egasi panellari uchun himoya. Do'kon biriktirilmagan bo'lsa
+ * ogohlantirish sahifasiga yo'naltiradi.
+ */
+function require_store_owner(): array
+{
+    require_role('store');
+    $store = current_store();
+    if (!$store) {
+        http_response_code(403);
+        die('Sizga hali do\'kon biriktirilmagan. Iltimos admin bilan bog\'laning.');
+    }
+    return $store;
 }
 
 /* ---------- CSRF himoyasi ---------- */
@@ -267,6 +301,7 @@ function role_label(string $r): string
         'admin'    => 'Admin',
         'courier'  => 'Kuryer',
         'customer' => 'Mijoz',
+        'store'    => 'Do\'kon',
     ][$r] ?? $r;
 }
 
@@ -533,6 +568,10 @@ function icon(string $name, int $size = 22): string
         'dashboard'=> '<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>',
         'box'      => '<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/>',
         'route'    => '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a4 4 0 0 0 0-8H9a4 4 0 0 1 0-8h7"/>',
+        'store'    => '<path d="M3 9 4.5 4h15L21 9"/><path d="M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z"/><path d="M5 13v7h14v-7"/><path d="M9 20v-4h6v4"/>',
+        'image'    => '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+        'layers'   => '<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+        'palette'  => '<path d="M12 3a9 9 0 1 0 0 18 2 2 0 0 0 2-2 2 2 0 0 1 2-2h1a4 4 0 0 0 4-4 9 9 0 0 0-9-8Z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/>',
     ];
     $p = $paths[$name] ?? $paths['box'];
     return '<svg class="ic" width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" '

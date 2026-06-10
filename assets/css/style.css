@@ -303,3 +303,52 @@ label.check input{width:auto;margin:0}
 
 /* Sozlamalar xarita rejim ko'rsatkichi */
 #modeInfo{font-weight:700}
+
+
+
+/* ============ v5: DO'KON EGASI PANELI + DO'KON OYNASI ============ */
+
+/* Forma ichki sarlavhasi */
+.form-sub{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--muted);
+  margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+.new-owner{margin:8px 0;border:1px dashed var(--line);border-radius:12px;padding:8px 12px}
+.new-owner summary{cursor:pointer;font-weight:600;color:var(--primary)}
+
+/* Do'kon paneli hero (dashboard) */
+.store-hero{position:relative;border-radius:var(--radius);overflow:hidden;background:var(--card);box-shadow:var(--shadow);border:1px solid var(--line)}
+.store-hero-cover{height:120px;background-size:cover;background-position:center;
+  background-color:var(--theme,#ff6b35)}
+.store-hero-body{display:flex;align-items:center;gap:16px;padding:16px;margin-top:-40px}
+.store-hero .store-logo{width:84px;height:84px;border-radius:20px;background:#fff;border:3px solid #fff;
+  background-size:cover;background-position:center;box-shadow:0 4px 14px rgba(0,0,0,.15);
+  display:grid;place-items:center;color:var(--theme,#ff6b35);flex-shrink:0}
+.store-hero-body h1{font-size:22px;margin:0}
+.hero-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+/* Brending oldindan ko'rish (store profile) */
+.brand-preview{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
+.brand-preview .bp-cover{height:90px;background-size:cover;background-position:center;
+  background-color:var(--theme,#ff6b35);position:relative}
+.brand-preview .bp-logo{position:absolute;left:16px;bottom:-22px;width:60px;height:60px;border-radius:14px;
+  background:#fff;border:2px solid #fff;background-size:cover;background-position:center;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.brand-preview .bp-name{padding:28px 16px 12px;font-weight:800;font-size:16px}
+
+/* ============ DO'KON OYNASI (ommaviy) ============ */
+.store-window{border-radius:var(--radius);overflow:hidden;background:var(--card);
+  box-shadow:var(--shadow);border:1px solid var(--line);margin-bottom:18px}
+.sw-cover{height:170px;background-size:cover;background-position:center;
+  background-color:var(--theme,#ff6b35);position:relative}
+.sw-back{position:absolute;left:12px;top:12px;width:40px;height:40px;border-radius:12px;
+  background:rgba(255,255,255,.9);display:grid;place-items:center;color:#111;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.sw-head{display:flex;gap:16px;padding:16px;margin-top:-46px;align-items:flex-end}
+.sw-logo{width:96px;height:96px;border-radius:22px;background:#fff;border:3px solid #fff;
+  background-size:cover;background-position:center;box-shadow:0 5px 18px rgba(0,0,0,.18);
+  display:grid;place-items:center;color:var(--theme,#ff6b35);flex-shrink:0}
+.sw-info{padding-bottom:4px}
+.sw-info h1{font-size:23px;margin:0;line-height:1.1}
+.sw-info .hero-tags{margin-top:10px}
+.sw-info a.tag{text-decoration:none}
+.sw-sections{position:sticky;top:60px;z-index:5;background:var(--bg);padding-top:6px}
+
+/* Do'kon oynasidagi aktiv rangli teglar theme rangiga moslashadi */
+.store-window .tag.zone-in{background:color-mix(in srgb, var(--theme,#22c55e) 16%, #fff);color:var(--theme,#067647)}

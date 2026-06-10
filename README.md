@@ -134,3 +134,54 @@ sql/migrate_v4.sql          — mavjud bazaga v4 qo'shimchalari
 ```bash
 mysql -u root -p dostavka < sql/migrate_v4.sql
 ```
+
+
+---
+
+## 🆕 v5 yangiliklari — Do'kon egasi paneli
+
+### 🏪 Do'kon o'z oynasi va paneliga ega bo'ldi
+Endi har bir do'kon/fastfud **alohida egasi (akkaunti)** orqali mustaqil boshqariladi.
+
+- **Yangi rol: `store`** (do'kon egasi). Admin do'kon yaratganda egasini biriktiradi yoki to'g'ridan-to'g'ri yangi egasi akkauntini yaratadi (`admin/stores.php`).
+- **Do'kon paneli** (`/store/`):
+  - `store/index.php` — dashboard (mahsulot/bo'lim/buyurtma statistikasi, holat).
+  - `store/products.php` — do'kon **o'z mahsulotlarini** qo'shadi/tahrirlaydi (faqat o'ziniki bilan ishlaydi).
+  - `store/sections.php` — do'kon ichidagi **bo'limlar** (menyu kategoriyalari, masalan "Lavashlar", "Ichimliklar").
+  - `store/profile.php` — **brending** (logotip, banner, asosiy rang), **ish vaqti + ish kunlari**, xaritada joylashuv.
+
+### 🎨 Brending / bezatish
+- Do'kon **logotip**, **banner (cover)** va **asosiy rang (theme)** belgilaydi — do'kon oynasi shu ranglarda bezatiladi.
+- Jonli "oldindan ko'rish" (preview) profil sahifasida.
+
+### 🗂 Bo'limlar (sections)
+- Do'kon menyusini bo'limlarga ajratadi; mahsulot bo'limga biriktiriladi.
+- Ommaviy oynada mahsulotlar bo'limlar bo'yicha guruhlanib ko'rsatiladi.
+
+### 🪟 Ommaviy do'kon oynasi (`store_view.php`)
+- Logotip, banner, ish vaqti (ochiq/yopiq), telefon, manzil va chegirma ko'rsatiladi.
+- Mahsulotlar bo'limlar bo'yicha; bo'lim havolalari (anchor) bilan tez o'tish.
+- Bosh sahifadagi do'kon kartalari shu oynaga olib boradi.
+
+### 🔐 Xavfsizlik (do'kon paneli)
+- Do'kon egasi **faqat o'z do'koni** ma'lumotlari bilan ishlaydi — barcha so'rovlar `owner_id` / `store_id` bo'yicha cheklangan (boshqa do'kon mahsulotini tahrirlab/o'chirib bo'lmaydi).
+- Bo'lim biriktirishda ham bo'lim shu do'konga tegishliligi tekshiriladi.
+
+### Yangi / o'zgargan fayllar (v5)
+```
+store/index.php, store/products.php, store/sections.php, store/profile.php — do'kon paneli
+store_view.php              — ommaviy do'kon oynasi (brending bilan)
+admin/stores.php            — egasi biriktirish + logo/banner/rang
+sql/migrate_v5.sql          — store roli, owner_id, logo/cover/theme, store_sections, section_id
+```
+
+### v5 migratsiyasi (mavjud baza uchun)
+```bash
+mysql -u root -p dostavka < sql/migrate_v5.sql
+```
+
+### Demo do'kon egasi akkauntlari (parol: `12345`)
+```
++998904444444  — Oqtepa Lavash egasi
++998905555555  — Evos Burger egasi
+```

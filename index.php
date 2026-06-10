@@ -59,8 +59,8 @@ require __DIR__ . '/includes/header.php';
     </a>
     <?php foreach ($stores as $s):
         $open = store_is_open($s); ?>
-        <a class="store-card <?= $storeId === (int)$s['id'] ? 'active' : '' ?>" href="?store=<?= $s['id'] ?>">
-            <div class="store-img" style="background-image:url('<?= e($s['image'] ?: 'https://via.placeholder.com/120?text=Do%27kon') ?>')">
+        <a class="store-card" href="/store_view.php?id=<?= $s['id'] ?>">
+            <div class="store-img" style="background-image:url('<?= e($s['logo'] ?: $s['image'] ?: 'https://via.placeholder.com/120?text=Do%27kon') ?>')">
                 <span class="store-status <?= $open ? 'open' : 'closed' ?>"><?= $open ? 'Ochiq' : 'Yopiq' ?></span>
                 <?php if ($s['discount_percent'] > 0): ?><span class="store-disc">-<?= (float)$s['discount_percent'] ?>%</span><?php endif; ?>
             </div>

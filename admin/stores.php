@@ -14,6 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name     = trim($_POST['name'] ?? '');
         $desc     = trim($_POST['description'] ?? '');
         $image    = trim($_POST['image'] ?? '');
+        $logo     = trim($_POST['logo'] ?? '');
+        $cover    = trim($_POST['cover'] ?? '');
+        $theme    = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['theme_color'] ?? '') ? $_POST['theme_color'] : '#ff6b35';
         $address  = trim($_POST['address'] ?? '');
         $phone    = trim($_POST['phone'] ?? '');
         $lat      = ($_POST['lat'] ?? '') !== '' ? (float)$_POST['lat'] : null;
@@ -22,27 +25,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $close    = preg_match('/^\d{2}:\d{2}$/', $_POST['close_time'] ?? '') ? $_POST['close_time'].':00' : '22:00:00';
         $discount = max(0, min(100, (float)($_POST['discount_percent'] ?? 0)));
         $active   = isset($_POST['is_active']) ? 1 : 0;
+        $ownerId  = (int)($_POST['owner_id'] ?? 0) ?: null;
 
         // Ish kunlari (massiv -> "1,2,3")
         $days = array_filter(array_map('intval', (array)($_POST['work_days'] ?? [])), fn($d) => $d >= 1 && $d <= 7);
         $workDays = $days ? implode(',', $days) : '1,2,3,4,5,6,7';
 
+        // --- Yangi do'kon egasi akkaunti yaratish (ixtiyoriy) ---
+        $newOwnerName  = trim($_POST['new_owner_name'] ?? '');
+        $newOwnerPhone = trim($_POST['new_owner_phone'] ?? '');
+        $newOwnerPass  = $_POST['new_owner_pass'] ?? '';
+        if ($newOwnerName !== '' && $newOwnerPhone !== '' && $newOwnerPass !== '') {
+            if (mb_strlen($newOwnerPass) < 5) {
+                $errors[] = 'Egasi paroli kamida 5 belgidan iborat bo\'lsin.';
+            } else {
+                $chk = db()->prepare('SELECT id FROM users WHERE phone = ?');
+                $chk->execute([$newOwnerPhone]);
+                if ($chk->fetch()) {
+                    $errors[] = 'Bu telefon raqami bilan foydalanuvchi allaqachon mavjud.';
+                } else {
+                    db()->prepare('INSERT INTO users (name, phone, password, role) VALUES (?,?,?,"store")')
+                        ->execute([$newOwnerName, $newOwnerPhone, password_hash($newOwnerPass, PASSWORD_DEFAULT)]);
+                    $ownerId = (int)db()->lastInsertId();
+                    $msg = 'Do\'kon egasi akkaunti yaratildi. ';
+                }
+            }
+        }
+
         if (mb_strlen($name) < 2) {
             $errors[] = 'Do\'kon nomini kiriting.';
-        } else {
+        }
+
+        if (!$errors) {
             if ($id) {
                 db()->prepare(
-                    'UPDATE stores SET name=?, description=?, image=?, address=?, phone=?,
-                        lat=?, lng=?, open_time=?, close_time=?, work_days=?, discount_percent=?, is_active=?
+                    'UPDATE stores SET owner_id=?, name=?, description=?, image=?, logo=?, cover=?, theme_color=?,
+                        address=?, phone=?, lat=?, lng=?, open_time=?, close_time=?, work_days=?, discount_percent=?, is_active=?
                      WHERE id=?'
-                )->execute([$name, $desc, $image, $address, $phone, $lat, $lng, $open, $close, $workDays, $discount, $active, $id]);
-                $msg = 'Do\'kon yangilandi.';
+                )->execute([$ownerId, $name, $desc, $image, $logo, $cover, $theme, $address, $phone, $lat, $lng, $open, $close, $workDays, $discount, $active, $id]);
+                $msg .= 'Do\'kon yangilandi.';
             } else {
                 db()->prepare(
-                    'INSERT INTO stores (name, description, image, address, phone, lat, lng, open_time, close_time, work_days, discount_percent, is_active)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
-                )->execute([$name, $desc, $image, $address, $phone, $lat, $lng, $open, $close, $workDays, $discount, $active]);
-                $msg = 'Do\'kon qo\'shildi.';
+                    'INSERT INTO stores (owner_id, name, description, image, logo, cover, theme_color, address, phone, lat, lng, open_time, close_time, work_days, discount_percent, is_active)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                )->execute([$ownerId, $name, $desc, $image, $logo, $cover, $theme, $address, $phone, $lat, $lng, $open, $close, $workDays, $discount, $active]);
+                $msg .= 'Do\'kon qo\'shildi.';
+            }
+            // role='store' egaga aylantirilsa, rolini moslab qo'yamiz
+            if ($ownerId) {
+                db()->prepare('UPDATE users SET role = "store" WHERE id = ? AND role = "customer"')->execute([$ownerId]);
             }
         }
     } elseif ($action === 'delete') {
@@ -63,8 +94,17 @@ if ($editId) {
 }
 
 $stores = db()->query(
-    'SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.store_id=s.id) AS product_count
-     FROM stores s ORDER BY s.created_at DESC'
+    'SELECT s.*, u.name AS owner_name, u.phone AS owner_phone,
+            (SELECT COUNT(*) FROM products p WHERE p.store_id=s.id) AS product_count
+     FROM stores s LEFT JOIN users u ON u.id = s.owner_id
+     ORDER BY s.created_at DESC'
+)->fetchAll();
+
+// Egasi sifatida tanlash mumkin bo'lgan foydalanuvchilar (store yoki band bo'lmagan)
+$owners = db()->query(
+    "SELECT u.id, u.name, u.phone, u.role,
+            (SELECT s2.name FROM stores s2 WHERE s2.owner_id = u.id LIMIT 1) AS owns
+     FROM users u WHERE u.role IN ('store','customer') ORDER BY u.role, u.name"
 )->fetchAll();
 
 $editDays = $edit ? array_map('intval', explode(',', $edit['work_days'] ?? '1,2,3,4,5,6,7')) : [1,2,3,4,5,6,7];
@@ -78,7 +118,7 @@ $pageTitle = 'Do\'konlar (admin)';
 require __DIR__ . '/../includes/header.php';
 ?>
 <h1 class="page-title">Do'konlar / Fastfudlar 🏪</h1>
-<p class="page-sub">Do'kon qo'shing, ish vaqti, joylashuvi va chegirmasini belgilang.</p>
+<p class="page-sub">Do'kon qo'shing, egasini biriktiring, ish vaqti, brending va joylashuvini belgilang.</p>
 
 <?php if ($msg): ?><div class="alert success"><?= icon('check',16) ?><?= e($msg) ?></div><?php endif; ?>
 <?php foreach ($errors as $er): ?><div class="alert error"><?= icon('x',16) ?><?= e($er) ?></div><?php endforeach; ?>
@@ -93,7 +133,33 @@ require __DIR__ . '/../includes/header.php';
 
             <label class="field"><span>Nomi</span><input type="text" name="name" value="<?= e($edit['name'] ?? '') ?>" required></label>
             <label class="field"><span>Tavsif</span><textarea name="description" rows="2"><?= e($edit['description'] ?? '') ?></textarea></label>
-            <label class="field"><span>Rasm URL</span><input type="text" name="image" value="<?= e($edit['image'] ?? '') ?>" placeholder="https://..."></label>
+
+            <h3 class="form-sub"><?= icon('palette',16) ?> Brending</h3>
+            <label class="field"><span>Logotip URL</span><input type="text" name="logo" value="<?= e($edit['logo'] ?? '') ?>" placeholder="https://... (logo)"></label>
+            <label class="field"><span>Sarlavha (cover) rasmi URL</span><input type="text" name="cover" value="<?= e($edit['cover'] ?? '') ?>" placeholder="https://... (banner)"></label>
+            <label class="field"><span>Asosiy rasm URL</span><input type="text" name="image" value="<?= e($edit['image'] ?? '') ?>" placeholder="https://..."></label>
+            <label class="field"><span>Do'kon rangi (theme)</span><input type="color" name="theme_color" value="<?= e($edit['theme_color'] ?? '#ff6b35') ?>" style="height:44px;padding:4px"></label>
+
+            <h3 class="form-sub"><?= icon('user',16) ?> Egasi (do'kon paneliga kiradi)</h3>
+            <label class="field"><span>Mavjud egani tanlash</span>
+                <select name="owner_id">
+                    <option value="0">— biriktirilmagan —</option>
+                    <?php foreach ($owners as $o): ?>
+                        <option value="<?= $o['id'] ?>" <?= ($edit['owner_id'] ?? 0) == $o['id'] ? 'selected' : '' ?>>
+                            <?= e($o['name']) ?> (<?= e($o['phone']) ?>)<?= $o['owns'] ? ' · '.e($o['owns']) : '' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <details class="new-owner">
+                <summary>➕ Yangi egasi akkaunti yaratish</summary>
+                <label class="field"><span>Egasi ismi</span><input type="text" name="new_owner_name" placeholder="Masalan: Akmal aka"></label>
+                <label class="field"><span>Telefon (login)</span><input type="tel" name="new_owner_phone" placeholder="+998..."></label>
+                <label class="field"><span>Parol</span><input type="text" name="new_owner_pass" placeholder="kamida 5 belgi"></label>
+                <p class="muted small">To'ldirilsa, yangi "do'kon" akkaunti yaratilib shu do'konga biriktiriladi.</p>
+            </details>
+
+            <h3 class="form-sub"><?= icon('clock',16) ?> Ish vaqti va aloqa</h3>
             <label class="field"><span>Manzil</span><input type="text" name="address" value="<?= e($edit['address'] ?? '') ?>"></label>
             <label class="field"><span>Telefon</span><input type="tel" name="phone" value="<?= e($edit['phone'] ?? '') ?>" placeholder="+998..."></label>
 
@@ -139,21 +205,26 @@ require __DIR__ . '/../includes/header.php';
 
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Rasm</th><th>Nomi</th><th>Ish vaqti</th><th>Chegirma</th><th>Mahsulot</th><th>Holat</th><th></th></tr></thead>
+            <thead><tr><th>Logo</th><th>Nomi</th><th>Egasi</th><th>Ish vaqti</th><th>Mahsulot</th><th>Holat</th><th></th></tr></thead>
             <tbody>
             <?php foreach ($stores as $s):
                 $open = store_is_open($s); ?>
                 <tr>
-                    <td><div class="thumb" style="background-image:url('<?= e($s['image']) ?>')"></div></td>
+                    <td><div class="thumb" style="background-image:url('<?= e($s['logo'] ?: $s['image']) ?>')"></div></td>
                     <td>
                         <strong><?= e($s['name']) ?></strong>
                         <div class="muted small"><?= e($s['address'] ?? '') ?></div>
+                        <a class="muted small" href="/store_view.php?id=<?= $s['id'] ?>" target="_blank">🔗 Do'kon oynasi</a>
+                    </td>
+                    <td>
+                        <?php if ($s['owner_name']): ?>
+                            <?= e($s['owner_name']) ?><div class="muted small"><?= e($s['owner_phone']) ?></div>
+                        <?php else: ?><span class="muted">— yo'q —</span><?php endif; ?>
                     </td>
                     <td>
                         <?= e(store_hours_label($s)) ?>
                         <div class="<?= $open ? 'tag fee' : 'tag' ?>" style="margin-top:4px"><?= $open ? '🟢 Ochiq' : '🔴 Yopiq' ?></div>
                     </td>
-                    <td><?= $s['discount_percent'] > 0 ? '<span class="tag dist">-'.(float)$s['discount_percent'].'%</span>' : '—' ?></td>
                     <td><?= (int)$s['product_count'] ?></td>
                     <td><?= $s['is_active'] ? '🟢 Faol' : '🔴 Yopilgan' ?></td>
                     <td class="row-actions">
