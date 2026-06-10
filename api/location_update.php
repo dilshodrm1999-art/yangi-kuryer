@@ -6,7 +6,6 @@
  */
 require_once __DIR__ . '/../includes/functions.php';
 header('Content-Type: application/json; charset=utf-8');
-api_require_same_origin();
 
 $u = current_user();
 if (!$u || $u['role'] !== 'courier') {

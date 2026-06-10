@@ -38,7 +38,7 @@
       fd.append('product_id', pid);
       fd.append('csrf', csrf);
       fetch('/api/cart_add.php', { method: 'POST', body: fd })
-        .then(function (r) { return r.json(); })
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
         .then(function (d) {
           btn.disabled = false;
           if (d.ok) {
@@ -47,7 +47,7 @@
             setTimeout(function () { btn.classList.remove('added'); }, 600);
             window.toast('✅ ' + d.name + ' savatga qo\'shildi', 'success');
           } else {
-            window.toast('Xatolik yuz berdi', 'error');
+            window.toast(d.msg || 'Xatolik yuz berdi', 'error');
           }
         })
         .catch(function () { btn.disabled = false; window.toast('Tarmoq xatosi', 'error'); });

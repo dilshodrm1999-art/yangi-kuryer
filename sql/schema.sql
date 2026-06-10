@@ -1,9 +1,23 @@
 -- ============================================================
---  Dostavka (Yetkazib berish) xizmati - MySQL bazasi  (v2)
---  Ishga tushirish:  mysql -u root -p < sql/schema.sql
+--  Dostavka (Yetkazib berish) xizmati - TO'LIQ MySQL bazasi
+--  ----------------------------------------------------------
+--  BITTA UMUMIY FAYL: shu faylning o'zi to'liq tizimni o'rnatadi.
+--  Boshqa migratsiya fayllari kerak emas.
 --
---  YANGI v2: kuryer balansi, jonli lokatsiya, km-narx sozlamasi,
---  buyurtma masofasi va yetkazib berish haqi.
+--  Ishga tushirish (terminal):
+--      mysql -u root -p < sql/schema.sql
+--
+--  Yoki phpMyAdmin -> Import -> shu faylni tanlang.
+--
+--  DIQQAT: bu fayl mavjud "dostavka" bazasidagi jadvallarni
+--  o'chirib qaytadan yaratadi (demo ma'lumot bilan).
+--
+--  Ichida: foydalanuvchilar (mijoz/kuryer/admin/do'kon egasi),
+--  do'konlar+brending, do'kon bo'limlari, mahsulotlar+chegirma,
+--  buyurtmalar (masofa, zona, komissiya), sozlamalar (hudud,
+--  xarita, shahar poligoni, shahar ichi/tashqarisi narxi).
+--
+--  Standart parol (barcha demo akkauntlar uchun): 12345
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS dostavka

@@ -126,13 +126,7 @@ config/regions.php          — O'zbekiston viloyat/tumanlari + koordinatalar
 admin/stores.php            — do'konlar boshqaruvi (CRUD)
 admin/settings.php          — hudud, shahar poligoni, zonali narxlar
 assets/js/admin-settings.js — xarita: hudud markazi + poligon chizish
-sql/migrate_v4.sql          — mavjud bazaga v4 qo'shimchalari
 .htaccess, config/.htaccess, sql/.htaccess — xavfsizlik
-```
-
-### v4 migratsiyasi (mavjud baza uchun)
-```bash
-mysql -u root -p dostavka < sql/migrate_v4.sql
 ```
 
 
@@ -172,16 +166,23 @@ Endi har bir do'kon/fastfud **alohida egasi (akkaunti)** orqali mustaqil boshqar
 store/index.php, store/products.php, store/sections.php, store/profile.php — do'kon paneli
 store_view.php              — ommaviy do'kon oynasi (brending bilan)
 admin/stores.php            — egasi biriktirish + logo/banner/rang
-sql/migrate_v5.sql          — store roli, owner_id, logo/cover/theme, store_sections, section_id
 ```
 
-### v5 migratsiyasi (mavjud baza uchun)
+### ⚙️ O'rnatish — BITTA umumiy SQL fayl
+Endi alohida migratsiya fayllari yo'q. **`sql/schema.sql`** ning o'zi to'liq bazani (jadvallar + demo ma'lumot) o'rnatadi:
+
 ```bash
-mysql -u root -p dostavka < sql/migrate_v5.sql
+mysql -u root -p < sql/schema.sql
 ```
+Yoki **phpMyAdmin → Import** orqali shu faylni yuklang.
 
-### Demo do'kon egasi akkauntlari (parol: `12345`)
+> Diqqat: bu fayl mavjud `dostavka` bazasidagi jadvallarni o'chirib qaytadan yaratadi.
+
+### Demo akkauntlar (parol: `12345`)
 ```
-+998904444444  — Oqtepa Lavash egasi
-+998905555555  — Evos Burger egasi
++998900000000  — Admin (super admin)
++998901111111  — Kuryer (Akmal)
++998903333333  — Mijoz (Dilnoza)
++998904444444  — Do'kon egasi (Oqtepa Lavash)
++998905555555  — Do'kon egasi (Evos Burger)
 ```
