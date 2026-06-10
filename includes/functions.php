@@ -5,9 +5,92 @@
 
 require_once __DIR__ . '/../config/db.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+/* ============================================================
+ *  XAVFSIZLIK (Security) — sarlavhalar va sessiya himoyasi
+ * ============================================================ */
+
+/**
+ * Xavfsizlik sarlavhalari — XSS, clickjacking, MIME-sniffing va
+ * boshqa hujumlardan himoya. Har bir sahifada (CLI'dan tashqari) o'rnatiladi.
+ */
+function security_headers(): void
+{
+    if (PHP_SAPI === 'cli' || headers_sent()) {
+        return;
+    }
+    // MIME turini majburlamaslik
+    header('X-Content-Type-Options: nosniff');
+    // Iframe ichida ochilishni taqiqlash (clickjacking)
+    header('X-Frame-Options: DENY');
+    // Referrer siyosati
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    // Brauzer imkoniyatlarini cheklash
+    header('Permissions-Policy: geolocation=(self), microphone=(), camera=()');
+    // Eski brauzerlar uchun XSS filtri
+    header('X-XSS-Protection: 1; mode=block');
+    // Server signaturasini yashirish
+    header_remove('X-Powered-By');
+
+    // Content-Security-Policy: faqat ishonchli manbalar (Leaflet/OSM + o'zimiz)
+    $csp = "default-src 'self'; "
+         . "img-src 'self' data: https:; "
+         . "style-src 'self' 'unsafe-inline' https://unpkg.com; "
+         . "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+         . "connect-src 'self' https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; "
+         . "font-src 'self' data:; "
+         . "object-src 'none'; "
+         . "base-uri 'self'; "
+         . "form-action 'self'; "
+         . "frame-ancestors 'none'";
+    header('Content-Security-Policy: ' . $csp);
+
+    // HTTPS ostida ishlayotgan bo'lsa — HSTS
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
 }
+
+/**
+ * Xavfsiz sessiyani boshlash:
+ *  - HttpOnly (JS orqali cookie o'qib bo'lmaydi)
+ *  - SameSite=Lax (CSRF himoyasiga yordam)
+ *  - HTTPS ostida Secure
+ *  - vaqti-vaqti bilan session ID yangilanadi (session fixation himoyasi)
+ */
+function secure_session_start(): void
+{
+    if (session_status() !== PHP_SESSION_NONE) {
+        return;
+    }
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'domain'   => '',
+        'secure'   => $https,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    if (function_exists('ini_set')) {
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.use_only_cookies', '1');
+        ini_set('session.cookie_httponly', '1');
+    }
+    session_start();
+
+    // Har 30 daqiqada session ID ni yangilash (fixation himoyasi)
+    if (empty($_SESSION['__created'])) {
+        $_SESSION['__created'] = time();
+    } elseif (time() - $_SESSION['__created'] > 1800) {
+        session_regenerate_id(true);
+        $_SESSION['__created'] = time();
+    }
+}
+
+security_headers();
+secure_session_start();
 
 /* ---------- Xavfsizlik / chiqarish ---------- */
 
@@ -98,6 +181,71 @@ function check_csrf(): void
     if (!hash_equals($_SESSION['csrf'] ?? '', $token)) {
         http_response_code(419);
         die('Sessiya muddati tugadi. Sahifani yangilang.');
+    }
+}
+
+/* ---------- Login: sessiya yangilash + urinishlarni cheklash ---------- */
+
+/**
+ * Foydalanuvchini xavfsiz tarzda tizimga kiritish.
+ * Session fixation hujumiga qarshi session ID yangilanadi.
+ */
+function login_user(int $userId): void
+{
+    session_regenerate_id(true);
+    $_SESSION['user_id']  = $userId;
+    $_SESSION['__created'] = time();
+    unset($_SESSION['login_attempts'], $_SESSION['login_lock_until']);
+}
+
+/**
+ * Login urinishlarini cheklash (brute-force himoyasi).
+ * Bloklangan bo'lsa qolgan soniyani qaytaradi, aks holda 0.
+ */
+function login_lock_seconds(): int
+{
+    $until = (int)($_SESSION['login_lock_until'] ?? 0);
+    return $until > time() ? $until - time() : 0;
+}
+
+/** Muvaffaqiyatsiz urinishni qayd etish (5 marta = 60s blok) */
+function login_register_failure(): void
+{
+    $_SESSION['login_attempts'] = (int)($_SESSION['login_attempts'] ?? 0) + 1;
+    if ($_SESSION['login_attempts'] >= 5) {
+        $_SESSION['login_lock_until'] = time() + 60;
+        $_SESSION['login_attempts']   = 0;
+    }
+}
+
+/**
+ * API uchun bir xil manba (same-origin) tekshiruvi.
+ * Cross-site so'rovlarni rad etadi (CSRF/abuse himoyasi).
+ * JSON javob qaytaruvchi POST endpointlarda chaqiriladi.
+ */
+function api_require_same_origin(): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        return;
+    }
+    $host   = $_SERVER['HTTP_HOST'] ?? '';
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $ref    = $_SERVER['HTTP_REFERER'] ?? '';
+
+    $ok = false;
+    if ($origin !== '') {
+        $ok = (parse_url($origin, PHP_URL_HOST) === $host);
+    } elseif ($ref !== '') {
+        $ok = (parse_url($ref, PHP_URL_HOST) === $host);
+    } else {
+        // Origin/Referer yo'q — sodda fetch; CSRF tokenga tayanamiz
+        $ok = true;
+    }
+    if (!$ok) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'cross_origin']);
+        exit;
     }
 }
 
@@ -193,13 +341,140 @@ function haversine_km($lat1, $lng1, $lat2, $lng2): float
     return round($R * $c, 2);
 }
 
-/** Masofa bo'yicha yetkazib berish haqini hisoblash */
-function delivery_fee(float $distanceKm): float
+/**
+ * Nuqta poligon (shahar markazi chizig'i) ichida yoki tashqarisida ekanligini aniqlash.
+ * Ray-casting algoritmi. $polygon = [[lat,lng], [lat,lng], ...]
+ * Bo'sh yoki uchburchakdan kam nuqta bo'lsa — har doim "shahar ichi" (true) deb hisoblaymiz.
+ */
+function point_in_polygon(?float $lat, ?float $lng, array $polygon): bool
 {
-    $perKm = (float)setting('price_per_km', 8000);
-    $min   = (float)setting('min_fee', 0);
-    $fee   = $distanceKm * $perKm;
+    if ($lat === null || $lng === null) {
+        return true; // koordinata yo'q — default shahar ichi
+    }
+    $n = count($polygon);
+    if ($n < 3) {
+        return true; // poligon belgilanmagan — hammasi shahar ichi
+    }
+    $inside = false;
+    for ($i = 0, $j = $n - 1; $i < $n; $j = $i++) {
+        $yi = (float)($polygon[$i][0] ?? 0); // lat
+        $xi = (float)($polygon[$i][1] ?? 0); // lng
+        $yj = (float)($polygon[$j][0] ?? 0);
+        $xj = (float)($polygon[$j][1] ?? 0);
+
+        $intersect = (($yi > $lat) !== ($yj > $lat))
+            && ($lng < ($xj - $xi) * ($lat - $yi) / (($yj - $yi) ?: 1e-12) + $xi);
+        if ($intersect) {
+            $inside = !$inside;
+        }
+    }
+    return $inside;
+}
+
+/** Sozlamalardagi shahar poligonini massiv ko'rinishida olish */
+function city_polygon(): array
+{
+    $raw = setting('city_polygon', '[]');
+    $arr = json_decode((string)$raw, true);
+    return is_array($arr) ? $arr : [];
+}
+
+/**
+ * Manzil koordinatasiga qarab zona aniqlash: 'in' (shahar ichi) yoki 'out' (tashqarisi).
+ */
+function delivery_zone(?float $lat, ?float $lng): string
+{
+    return point_in_polygon($lat, $lng, city_polygon()) ? 'in' : 'out';
+}
+
+/**
+ * Masofa va zonaga (shahar ichi / tashqarisi) qarab yetkazib berish haqi.
+ * - shahar ichi  -> price_in_city
+ * - shahar tashqari -> price_out_city
+ * Eski 'price_per_km' bilan ham mos: agar in/out belgilanmagan bo'lsa, undan foydalanadi.
+ */
+function delivery_fee(float $distanceKm, string $zone = 'in'): float
+{
+    $fallback = (float)setting('price_per_km', 8000);
+    $perKm = $zone === 'out'
+        ? (float)setting('price_out_city', $fallback)
+        : (float)setting('price_in_city', $fallback);
+    if ($perKm <= 0) {
+        $perKm = $fallback;
+    }
+    $min = (float)setting('min_fee', 0);
+    $fee = $distanceKm * $perKm;
     return round(max($fee, $min), -2); // 100 gacha yaxlitlash
+}
+
+/** Mahsulot uchun yakuniy chegirma foizi (mahsulot yoki do'kon — kattasi) */
+function product_discount(array $product): float
+{
+    return max(
+        (float)($product['discount_percent'] ?? 0),
+        (float)($product['store_discount'] ?? 0)
+    );
+}
+
+/** Mahsulotning chegirmadan keyingi yakuniy narxi (do'kon chegirmasi bilan) */
+function product_final_price(array $product): float
+{
+    return discounted_price($product['price'] ?? 0, product_discount($product));
+}
+
+/** Zona nomi: 'in' -> shahar ichi, 'out' -> tashqari */
+function zone_label(string $zone): string
+{
+    return $zone === 'out' ? 'Shahar tashqarisi' : 'Shahar ichi';
+}
+
+/* ---------- Do'konlar va chegirmalar ---------- */
+
+/** Chegirmadan keyingi narx (mahsulot uchun) */
+function discounted_price($price, $discountPercent): float
+{
+    $price = (float)$price;
+    $pct   = max(0, min(100, (float)$discountPercent));
+    return round($price * (1 - $pct / 100), -2);
+}
+
+/**
+ * Do'kon hozir ish vaqtida ochiqligini tekshirish.
+ * $store - stores jadvalidan satr (open_time, close_time, work_days, is_active).
+ */
+function store_is_open(array $store, ?int $ts = null): bool
+{
+    if (empty($store['is_active'])) {
+        return false;
+    }
+    $ts   = $ts ?? time();
+    $dow  = (int)date('N', $ts); // 1=Dushanba ... 7=Yakshanba
+    $days = array_filter(array_map('intval', explode(',', (string)($store['work_days'] ?? '1,2,3,4,5,6,7'))));
+    if ($days && !in_array($dow, $days, true)) {
+        return false;
+    }
+    $open  = $store['open_time']  ?? null;
+    $close = $store['close_time'] ?? null;
+    if (!$open || !$close) {
+        return true; // vaqt belgilanmagan — doim ochiq
+    }
+    $now = date('H:i:s', $ts);
+    // Yarim tundan oshadigan ish vaqti (masalan 18:00 - 02:00)
+    if ($close > $open) {
+        return $now >= $open && $now <= $close;
+    }
+    return $now >= $open || $now <= $close;
+}
+
+/** Ish vaqtini chiroyli ko'rsatish: "09:00 - 23:00" */
+function store_hours_label(array $store): string
+{
+    $o = substr((string)($store['open_time']  ?? ''), 0, 5);
+    $c = substr((string)($store['close_time'] ?? ''), 0, 5);
+    if ($o === '' || $c === '') {
+        return '24 soat';
+    }
+    return $o . ' - ' . $c;
 }
 
 /**

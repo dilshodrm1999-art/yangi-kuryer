@@ -90,3 +90,47 @@ assets/js/courier-track.js, track-order.js, admin-map.js
 ```
 
 > Eslatma: jonli xarita uchun OpenStreetMap (Leaflet) ishlatiladi — API kalit talab qilmaydi.
+
+---
+
+## 🆕 v4 yangiliklari
+
+### 🗺 Hudud va xarita
+- **Viloyat / tuman tanlash** — admin O'zbekistonning istalgan viloyati yoki tumanini tanlaydi; xarita avtomatik o'sha hududning markaziga o'tadi (`config/regions.php` — 14 ta hudud, koordinatalari bilan).
+- **Shahar chegarasini chizish** — admin xaritada shahar markazini chiziqlar (poligon) bilan belgilaydi.
+- **Zonali narx** — manzil shahar chizig'i **ichida** bo'lsa "shahar ichi" 1 km narxi, **tashqarisida** bo'lsa "shahar tashqarisi" narxi qo'llanadi. Hisob-kitob nuqta-poligon (ray-casting) algoritmi orqali serverda va mijozda jonli amalga oshiriladi.
+- Buyurtmada zona (`delivery_zone`) saqlanadi va admin panelda ko'rsatiladi.
+
+### 🏪 Do'konlar / Fastfudlar
+- Yangi **`admin/stores.php`** — do'kon qo'shish/tahrirlash/o'chirish.
+- Har bir do'kon: nomi, rasm, manzil, telefon, **xaritada joylashuvi**, **ish vaqti** (ochilish/yopilish + ish kunlari), **chegirma %**, faollik holati.
+- Do'kon **yopiq** bo'lsa, mijoz undan buyurtma bera olmaydi (server tomonda ham tekshiriladi).
+- Mahsulotlar do'konga biriktiriladi; bosh sahifada do'kon karuseli (ochiq/yopiq holati va chegirma bilan).
+
+### 🏷 Chegirmalar
+- Mahsulot bo'yicha va/yoki do'kon bo'yicha chegirma. Mijozga eng katta chegirma qo'llanadi; eski narx chizilgan holda ko'rsatiladi.
+- Chegirmali narx buyurtma yaratilganda serverda qayta hisoblanadi (mijoz narxni o'zgartira olmaydi).
+
+### 🔐 Xavfsizlik (yuqori e'tibor)
+- **Xavfsiz sessiya**: `HttpOnly`, `SameSite=Lax`, HTTPS ostida `Secure`, `use_strict_mode`, login/registratsiyada `session_regenerate_id` (session fixation himoyasi), 30 daqiqada ID yangilanishi.
+- **Xavfsizlik sarlavhalari**: Content-Security-Policy, X-Frame-Options (DENY), X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS (HTTPS ostida). `X-Powered-By` olib tashlanadi.
+- **CSRF himoyasi** barcha formalarda; AJAX (savatga qo'shish, kuryer GPS) endpointlarida CSRF token + **same-origin** tekshiruvi (cross-site so'rovlar rad etiladi).
+- **Brute-force himoyasi** — 5 marta xato login = 60 soniya blok.
+- **Ma'lumot sizib chiqishining oldini olish** — baza/buyurtma xatolari foydalanuvchiga ko'rsatilmaydi, faqat log'ga yoziladi.
+- **Apache himoyasi** (`.htaccess`) — katalog ro'yxati o'chirilgan; `config/` va `sql/` kataloglari va `.sql/.md/.env` kabi maxfiy fayllarga to'g'ridan-to'g'ri kirish taqiqlangan.
+- Barcha SQL so'rovlari **PDO prepared statements** orqali (SQL injection himoyasi), chiqishlar `htmlspecialchars` bilan ekranlanadi (XSS himoyasi).
+
+### Yangi / o'zgargan fayllar
+```
+config/regions.php          — O'zbekiston viloyat/tumanlari + koordinatalar
+admin/stores.php            — do'konlar boshqaruvi (CRUD)
+admin/settings.php          — hudud, shahar poligoni, zonali narxlar
+assets/js/admin-settings.js — xarita: hudud markazi + poligon chizish
+sql/migrate_v4.sql          — mavjud bazaga v4 qo'shimchalari
+.htaccess, config/.htaccess, sql/.htaccess — xavfsizlik
+```
+
+### v4 migratsiyasi (mavjud baza uchun)
+```bash
+mysql -u root -p dostavka < sql/migrate_v4.sql
+```

@@ -2,11 +2,17 @@
 (function () {
   if (!navigator.geolocation) return;
   var badge = document.getElementById('gpsBadge');
+  var csrf = (document.querySelector('meta[name="csrf"]') || {}).content || '';
 
   function send(lat, lng) {
     var fd = new FormData();
     fd.append('lat', lat); fd.append('lng', lng);
-    fetch('/api/location_update.php', { method: 'POST', body: fd })
+    fd.append('csrf', csrf);
+    fetch('/api/location_update.php', {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-CSRF': csrf }
+    })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (badge) {

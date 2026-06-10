@@ -26,7 +26,8 @@ if ($u) {
         $navItems = [
             ['/admin/index.php',    'dashboard','Panel'],
             ['/admin/orders.php',   'list',     'Buyurtma'],
-            ['/admin/products.php', 'box',      'Mahsulot'],
+            ['/admin/stores.php',   'box',      'Do\'kon'],
+            ['/admin/products.php', 'package',  'Mahsulot'],
             ['/admin/couriers.php', 'truck',    'Kuryer'],
             ['/admin/settings.php', 'settings', 'Sozlama'],
         ];

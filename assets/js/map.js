@@ -9,6 +9,18 @@
     maxZoom: 19, attribution: '© OpenStreetMap'
   }).addTo(map);
 
+  // Shahar chegarasi poligonini ko'rsatish (agar belgilangan bo'lsa)
+  if (window.CITY_POLYGON && window.CITY_POLYGON.length >= 3) {
+    try {
+      var cityLayer = L.polygon(window.CITY_POLYGON, {
+        color: '#ff6b35', weight: 2, fillColor: '#ff6b35', fillOpacity: 0.08,
+        dashArray: '6 6'
+      }).addTo(map);
+      cityLayer.bindTooltip('Shahar ichi zonasi', { sticky: true });
+      map.fitBounds(cityLayer.getBounds(), { padding: [30, 30] });
+    } catch (e) {}
+  }
+
   var marker = null;
   var latInput = document.getElementById('lat');
   var lngInput = document.getElementById('lng');

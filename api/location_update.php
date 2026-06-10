@@ -6,11 +6,20 @@
  */
 require_once __DIR__ . '/../includes/functions.php';
 header('Content-Type: application/json; charset=utf-8');
+api_require_same_origin();
 
 $u = current_user();
 if (!$u || $u['role'] !== 'courier') {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'forbidden']);
+    exit;
+}
+
+// CSRF tekshiruvi (token header yoki POST orqali)
+$token = $_POST['csrf'] ?? ($_SERVER['HTTP_X_CSRF'] ?? '');
+if (!hash_equals($_SESSION['csrf'] ?? '', $token)) {
+    http_response_code(419);
+    echo json_encode(['ok' => false, 'error' => 'csrf']);
     exit;
 }
 

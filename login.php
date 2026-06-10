@@ -13,17 +13,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = trim($_POST['phone'] ?? '');
     $pass  = $_POST['password'] ?? '';
 
-    $stmt = db()->prepare('SELECT * FROM users WHERE phone = ? LIMIT 1');
-    $stmt->execute([$phone]);
-    $user = $stmt->fetch();
-
-    if (!$user || !password_verify($pass, $user['password'])) {
-        $errors[] = 'Telefon yoki parol noto\'g\'ri.';
-    } elseif (!$user['is_active']) {
-        $errors[] = 'Hisobingiz bloklangan. Admin bilan bog\'laning.';
+    $lock = login_lock_seconds();
+    if ($lock > 0) {
+        $errors[] = "Juda ko'p urinish. {$lock} soniyadan so'ng qayta urinib ko'ring.";
     } else {
-        $_SESSION['user_id'] = (int)$user['id'];
-        redirect(role_home($user['role']));
+        $stmt = db()->prepare('SELECT * FROM users WHERE phone = ? LIMIT 1');
+        $stmt->execute([$phone]);
+        $user = $stmt->fetch();
+
+        if (!$user || !password_verify($pass, $user['password'])) {
+            login_register_failure();
+            $errors[] = 'Telefon yoki parol noto\'g\'ri.';
+        } elseif (!$user['is_active']) {
+            $errors[] = 'Hisobingiz bloklangan. Admin bilan bog\'laning.';
+        } else {
+            login_user((int)$user['id']);
+            redirect(role_home($user['role']));
+        }
     }
 }
 

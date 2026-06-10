@@ -12,18 +12,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name      = trim($_POST['name'] ?? '');
         $desc      = trim($_POST['description'] ?? '');
         $price     = (float)($_POST['price'] ?? 0);
+        $discount  = max(0, min(100, (float)($_POST['discount_percent'] ?? 0)));
         $catId     = (int)($_POST['category_id'] ?? 0) ?: null;
+        $storeId   = (int)($_POST['store_id'] ?? 0) ?: null;
         $image     = trim($_POST['image'] ?? '');
         $available = isset($_POST['is_available']) ? 1 : 0;
 
         if ($name !== '') {
             if ($id) {
-                db()->prepare('UPDATE products SET name=?, description=?, price=?, category_id=?, image=?, is_available=? WHERE id=?')
-                    ->execute([$name, $desc, $price, $catId, $image, $available, $id]);
+                db()->prepare('UPDATE products SET name=?, description=?, price=?, discount_percent=?, category_id=?, store_id=?, image=?, is_available=? WHERE id=?')
+                    ->execute([$name, $desc, $price, $discount, $catId, $storeId, $image, $available, $id]);
                 $msg = 'Mahsulot yangilandi.';
             } else {
-                db()->prepare('INSERT INTO products (name, description, price, category_id, image, is_available) VALUES (?,?,?,?,?,?)')
-                    ->execute([$name, $desc, $price, $catId, $image, $available]);
+                db()->prepare('INSERT INTO products (name, description, price, discount_percent, category_id, store_id, image, is_available) VALUES (?,?,?,?,?,?,?,?)')
+                    ->execute([$name, $desc, $price, $discount, $catId, $storeId, $image, $available]);
                 $msg = 'Mahsulot qo\'shildi.';
             }
         }
@@ -48,8 +50,13 @@ if ($editId) {
 }
 
 $categories = db()->query('SELECT * FROM categories ORDER BY name')->fetchAll();
+$stores = db()->query('SELECT id, name FROM stores ORDER BY name')->fetchAll();
 $products = db()->query(
-    'SELECT p.*, c.name AS category FROM products p LEFT JOIN categories c ON c.id=p.category_id ORDER BY p.created_at DESC'
+    'SELECT p.*, c.name AS category, s.name AS store_name
+     FROM products p
+     LEFT JOIN categories c ON c.id=p.category_id
+     LEFT JOIN stores s ON s.id=p.store_id
+     ORDER BY p.created_at DESC'
 )->fetchAll();
 
 $pageTitle = 'Mahsulotlar (admin)';
@@ -68,6 +75,15 @@ require __DIR__ . '/../includes/header.php';
             <label class="field"><span>Nomi</span><input type="text" name="name" value="<?= e($edit['name'] ?? '') ?>" required></label>
             <label class="field"><span>Tavsif</span><textarea name="description" rows="2"><?= e($edit['description'] ?? '') ?></textarea></label>
             <label class="field"><span>Narxi (so'm)</span><input type="number" step="100" name="price" value="<?= e($edit['price'] ?? '') ?>" required></label>
+            <label class="field"><span>Chegirma (%)</span><input type="number" min="0" max="100" step="1" name="discount_percent" value="<?= e($edit['discount_percent'] ?? 0) ?>"></label>
+            <label class="field"><span>Do'kon / Fastfud</span>
+                <select name="store_id">
+                    <option value="0">— tanlanmagan —</option>
+                    <?php foreach ($stores as $s): ?>
+                        <option value="<?= $s['id'] ?>" <?= ($edit['store_id'] ?? 0) == $s['id'] ? 'selected' : '' ?>><?= e($s['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
             <label class="field"><span>Kategoriya</span>
                 <select name="category_id">
                     <option value="0">— tanlanmagan —</option>
@@ -92,14 +108,23 @@ require __DIR__ . '/../includes/header.php';
 
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Rasm</th><th>Nomi</th><th>Kategoriya</th><th>Narx</th><th>Holat</th><th></th></tr></thead>
+            <thead><tr><th>Rasm</th><th>Nomi</th><th>Do'kon</th><th>Kategoriya</th><th>Narx</th><th>Holat</th><th></th></tr></thead>
             <tbody>
             <?php foreach ($products as $p): ?>
                 <tr>
                     <td><div class="thumb" style="background-image:url('<?= e($p['image']) ?>')"></div></td>
                     <td><?= e($p['name']) ?></td>
+                    <td><?= e($p['store_name'] ?? '—') ?></td>
                     <td><?= e($p['category'] ?? '—') ?></td>
-                    <td><?= money($p['price']) ?></td>
+                    <td>
+                        <?php if ($p['discount_percent'] > 0): ?>
+                            <span class="old-price"><?= money($p['price']) ?></span>
+                            <strong><?= money(discounted_price($p['price'], $p['discount_percent'])) ?></strong>
+                            <span class="tag dist">-<?= (float)$p['discount_percent'] ?>%</span>
+                        <?php else: ?>
+                            <?= money($p['price']) ?>
+                        <?php endif; ?>
+                    </td>
                     <td><?= $p['is_available'] ? '🟢' : '🔴' ?></td>
                     <td class="row-actions">
                         <a class="btn sm" href="?edit=<?= $p['id'] ?>"><?= icon('edit',15) ?></a>

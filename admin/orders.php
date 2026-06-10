@@ -104,6 +104,7 @@ require __DIR__ . '/../includes/header.php';
 
         <div class="order-meta">
             <?php if ($o['distance_km'] > 0): ?><span class="tag dist"><?= icon('route',13) ?> <?= e($o['distance_km']) ?> km</span><?php endif; ?>
+            <span class="tag <?= ($o['delivery_zone'] ?? 'in') === 'out' ? 'zone-out' : 'zone-in' ?>"><?= icon('pin',13) ?> <?= e(zone_label($o['delivery_zone'] ?? 'in')) ?></span>
             <span class="tag fee"><?= icon('truck',13) ?> <?= money($o['delivery_fee']) ?></span>
         </div>
 

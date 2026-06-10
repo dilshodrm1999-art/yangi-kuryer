@@ -29,8 +29,17 @@ function db(): PDO
             PDO::ATTR_EMULATE_PREPARES   => false,
         ]);
     } catch (PDOException $e) {
+        // Xato tafsilotlarini foydalanuvchiga ko'rsatmaymiz (ma'lumot sizib chiqmasligi uchun)
+        error_log('DB connection error: ' . $e->getMessage());
         http_response_code(500);
-        die('Bazaga ulanishda xatolik: ' . htmlspecialchars($e->getMessage()));
+        if (PHP_SAPI !== 'cli'
+            && str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'error' => 'server_error']);
+        } else {
+            die('Server xatosi. Iltimos keyinroq urinib ko\'ring.');
+        }
+        exit;
     }
 
     return $pdo;

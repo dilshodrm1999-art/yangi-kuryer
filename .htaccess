@@ -1,0 +1,35 @@
+# ============================================================
+#  Apache xavfsizlik sozlamalari (Dostavka)
+# ============================================================
+
+# Server signaturasini yashirish
+ServerSignature Off
+
+# Katalog ro'yxatini o'chirish (directory listing)
+Options -Indexes
+
+# Maxfiy fayllarni himoyalash
+<FilesMatch "(^\.|\.(sql|md|json|lock|ini|log|sh|bak)$|composer\.(json|lock))">
+    Require all denied
+</FilesMatch>
+
+# config/ va sql/ kataloglariga to'g'ridan-to'g'ri kirishni taqiqlash
+RedirectMatch 403 ^/(config|sql)(/|$)
+
+# Xavfsizlik sarlavhalari (PHP'dan tashqari, statik fayllar uchun ham)
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always unset X-Powered-By
+    Header unset Server
+</IfModule>
+
+# PHP xato xabarlarini foydalanuvchiga ko'rsatmaslik (production)
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value session.cookie_httponly 1
+    php_value session.use_only_cookies 1
+    php_value session.cookie_samesite "Lax"
+</IfModule>

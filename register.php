@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'INSERT INTO users (name, phone, password, role) VALUES (?, ?, ?, "customer")'
         );
         $stmt->execute([$name, $phone, password_hash($pass, PASSWORD_DEFAULT)]);
-        $_SESSION['user_id'] = (int)db()->lastInsertId();
+        login_user((int)db()->lastInsertId());
         redirect('/index.php');
     }
 }
