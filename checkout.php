@@ -74,16 +74,20 @@ try {
     }
     $total = $goods + $fee;
 
+    // Keshbek: admin belgilagan foiz bo'yicha (mahsulot summasidan)
+    $cashbackPct = (float)setting('cashback_percent', 0);
+    $cashback    = calc_cashback($goods, $cashbackPct);
+
     $stmt = $pdo->prepare(
         'INSERT INTO orders
             (customer_id, status, address, lat, lng, pickup_lat, pickup_lng, pickup_name, pickup_address,
-             distance_km, delivery_zone, delivery_fee, phone, note, total)
-         VALUES (?, "new", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             distance_km, delivery_zone, delivery_fee, cashback_percent, cashback, phone, note, total)
+         VALUES (?, "new", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         current_user()['id'], $address, $lat, $lng, $pickupLat, $pickupLng,
         $pickup['name'] ?? null, $pickup['address'] ?? null,
-        $distance, $zone, $fee, $phone, $note, $total,
+        $distance, $zone, $fee, $cashbackPct, $cashback, $phone, $note, $total,
     ]);
     $orderId = (int)$pdo->lastInsertId();
 

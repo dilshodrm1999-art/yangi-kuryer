@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     set_setting('price_per_km',   (string)max(0, (int)($_POST['price_in_city'] ?? 8000)));
     set_setting('min_fee',        (string)max(0, (int)($_POST['min_fee'] ?? 0)));
     set_setting('commission_percent', (string)min(100, max(0, (int)($_POST['commission_percent'] ?? 0))));
+    set_setting('cashback_percent', (string)min(100, max(0, (int)($_POST['cashback_percent'] ?? 0))));
 
     // Hudud (viloyat / tuman)
     $region   = trim($_POST['region'] ?? '');
@@ -56,6 +57,7 @@ $priceIn   = (float)setting('price_in_city', 8000);
 $priceOut  = (float)setting('price_out_city', 15000);
 $minFee     = (float)setting('min_fee', 0);
 $commission = (float)setting('commission_percent', 20);
+$cashbackPct = (float)setting('cashback_percent', 0);
 $storeName = setting('store_name', 'Ombor');
 $storeLat  = (float)setting('store_lat', 41.311081);
 $storeLng  = (float)setting('store_lng', 69.240562);
@@ -110,6 +112,10 @@ require __DIR__ . '/../includes/header.php';
             <label class="field"><span>Admin komissiyasi (%)</span>
                 <input type="number" name="commission_percent" value="<?= (int)$commission ?>" min="0" max="100" step="1">
             </label>
+            <label class="field"><span>Keshbek (%) — yangi buyurtmalar uchun standart</span>
+                <input type="number" name="cashback_percent" value="<?= (int)$cashbackPct ?>" min="0" max="100" step="1">
+            </label>
+            <div class="alert info"><?= icon('wallet',16) ?> Bu foiz yangi buyurtmalarga avtomatik qo'llanadi. Har bir buyurtma uchun alohida keshbekni "Buyurtmalar" sahifasidan o'zgartirishingiz mumkin.</div>
             <div class="alert info"><?= icon('route',16) ?> Manzil shahar chizig'i ichida bo'lsa "shahar ichi" narxi, tashqarisida bo'lsa "shahar tashqarisi" narxi qo'llanadi.</div>
 
             <label class="field" style="margin-top:8px"><span>Ombor nomi</span>

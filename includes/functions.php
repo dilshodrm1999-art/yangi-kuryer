@@ -643,6 +643,25 @@ function settle_delivery(PDO $pdo, array $order): void
         $pdo->prepare('UPDATE users SET balance = balance + ? WHERE id = ?')
             ->execute([$courierEarn, $order['courier_id']]);
     }
+
+    // Keshbek: mijozga hisoblanadi (buyurtmaga belgilangan keshbek)
+    if (empty($order['cashback_paid'])) {
+        $cashback = (float)($order['cashback'] ?? 0);
+        if ($cashback > 0 && !empty($order['customer_id'])) {
+            $pdo->prepare('UPDATE users SET cashback_balance = cashback_balance + ? WHERE id = ?')
+                ->execute([$cashback, $order['customer_id']]);
+        }
+        $pdo->prepare('UPDATE orders SET cashback_paid = 1 WHERE id = ?')->execute([$order['id']]);
+    }
+}
+
+/* ---------- Keshbek (cashback) ---------- */
+
+/** Buyurtma summasi va foiz bo'yicha keshbek miqdorini hisoblash (100 gacha yaxlitlanadi) */
+function calc_cashback(float $total, float $percent): float
+{
+    $percent = max(0, min(100, $percent));
+    return round($total * $percent / 100, -2);
 }
 
 /* ---------- Ikonkalar (inline SVG, zamonaviy) ---------- */
@@ -773,6 +792,81 @@ function courier_daily_series(int $courierId, int $days = 7): array
             'date'  => $key,
             'count' => $map[$key]['count'] ?? 0,
             'earn'  => $map[$key]['earn'] ?? 0,
+        ];
+    }
+    return $out;
+}
+
+
+/* ============================================================
+ *  ADMIN statistikasi (kuryerlar reytingi, daromad, keshbek)
+ * ============================================================ */
+
+/**
+ * Har bir kuryer bo'yicha: yetkazgan soni, umumiy yetkazish haqi,
+ * admin olgan komissiya, kuryerga to'langan ulush va o'rtacha foiz.
+ */
+function admin_courier_report(): array
+{
+    return db()->query(
+        "SELECT u.id, u.name, u.phone, u.is_active, u.balance,
+                COUNT(o.id)                                   AS delivered,
+                COALESCE(SUM(o.delivery_fee),0)               AS total_fee,
+                COALESCE(SUM(o.commission),0)                 AS total_commission,
+                COALESCE(SUM(o.delivery_fee - o.commission),0) AS courier_earn,
+                COALESCE(SUM(o.distance_km),0)                AS total_km
+         FROM users u
+         LEFT JOIN orders o ON o.courier_id = u.id AND o.status = 'delivered'
+         WHERE u.role = 'courier'
+         GROUP BY u.id, u.name, u.phone, u.is_active, u.balance
+         ORDER BY courier_earn DESC, delivered DESC"
+    )->fetchAll();
+}
+
+/** Admin uchun umumiy moliyaviy ko'rsatkichlar (davr kesimida) */
+function admin_finance_stats(): array
+{
+    $row = db()->query(
+        "SELECT
+            COUNT(*)                          AS delivered,
+            COALESCE(SUM(total),0)            AS revenue,
+            COALESCE(SUM(delivery_fee),0)     AS fees,
+            COALESCE(SUM(commission),0)       AS commission,
+            COALESCE(SUM(cashback),0)         AS cashback,
+            COALESCE(SUM(CASE WHEN DATE(updated_at)=CURDATE() THEN total ELSE 0 END),0)      AS today_revenue,
+            COALESCE(SUM(CASE WHEN DATE(updated_at)=CURDATE() THEN commission ELSE 0 END),0) AS today_commission,
+            COALESCE(SUM(CASE WHEN YEARWEEK(updated_at,1)=YEARWEEK(CURDATE(),1) THEN commission ELSE 0 END),0) AS week_commission,
+            COALESCE(SUM(CASE WHEN YEAR(updated_at)=YEAR(CURDATE()) AND MONTH(updated_at)=MONTH(CURDATE()) THEN commission ELSE 0 END),0) AS month_commission
+         FROM orders WHERE status='delivered'"
+    )->fetch();
+    return $row ?: [];
+}
+
+/** Oxirgi N kun bo'yicha admin komissiyasi (grafik uchun) */
+function admin_daily_commission(int $days = 7): array
+{
+    $stmt = db()->prepare(
+        "SELECT DATE(updated_at) AS d,
+                COUNT(*) AS cnt,
+                COALESCE(SUM(commission),0) AS commission
+         FROM orders
+         WHERE status='delivered' AND updated_at >= (CURDATE() - INTERVAL ? DAY)
+         GROUP BY DATE(updated_at)"
+    );
+    $stmt->execute([$days - 1]);
+    $map = [];
+    foreach ($stmt->fetchAll() as $r) {
+        $map[$r['d']] = ['count' => (int)$r['cnt'], 'commission' => (float)$r['commission']];
+    }
+    $dow = ['Yak','Du','Se','Cho','Pa','Ju','Sha'];
+    $out = [];
+    for ($i = $days - 1; $i >= 0; $i--) {
+        $ts  = strtotime("-$i day");
+        $key = date('Y-m-d', $ts);
+        $out[] = [
+            'label'      => $dow[(int)date('w', $ts)],
+            'count'      => $map[$key]['count'] ?? 0,
+            'commission' => $map[$key]['commission'] ?? 0,
         ];
     }
     return $out;

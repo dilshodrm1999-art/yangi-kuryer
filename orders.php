@@ -29,6 +29,18 @@ require __DIR__ . '/includes/header.php';
 ?>
 <h1 class="page-title">Buyurtmalarim 📦</h1>
 
+<?php $cbBal = (float)(current_user()['cashback_balance'] ?? 0); ?>
+<?php if ($cbBal > 0): ?>
+    <div class="cashback-banner">
+        <?= icon('wallet',20) ?>
+        <div>
+            <span class="cb-label">Keshbek hisobingiz</span>
+            <strong class="cb-amount"><?= money($cbBal) ?></strong>
+        </div>
+        <span class="cb-hint">Keyingi buyurtmalarda ishlatishingiz mumkin</span>
+    </div>
+<?php endif; ?>
+
 <?php if (isset($_GET['ok'])): ?>
     <div class="alert success"><?= icon('check',16) ?> Buyurtmangiz qabul qilindi! Raqami: #<?= (int)$_GET['ok'] ?></div>
 <?php endif; ?>
@@ -75,6 +87,9 @@ require __DIR__ . '/includes/header.php';
             <?php if ($o['distance_km'] > 0): ?><span class="tag dist"><?= icon('route',13) ?> <?= e($o['distance_km']) ?> km</span><?php endif; ?>
             <span class="tag <?= ($o['delivery_zone'] ?? 'in') === 'out' ? 'zone-out' : 'zone-in' ?>"><?= e(zone_label($o['delivery_zone'] ?? 'in')) ?></span>
             <span class="tag fee"><?= icon('truck',13) ?> Yo'l haqi: <?= money($o['delivery_fee']) ?></span>
+            <?php if (($o['cashback'] ?? 0) > 0): ?>
+                <span class="tag cashback"><?= icon('wallet',13) ?> Keshbek <?= ($o['status']==='delivered') ? '+' : '' ?><?= money($o['cashback']) ?></span>
+            <?php endif; ?>
         </div>
 
         <?php if ($active && $o['courier_name']): ?>

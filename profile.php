@@ -47,6 +47,17 @@ require __DIR__ . '/includes/header.php';
 <?php if ($msg): ?><div class="alert success"><?= icon('check',16) ?><?= e($msg) ?></div><?php endif; ?>
 <?php if ($err): ?><div class="alert error"><?= icon('x',16) ?><?= e($err) ?></div><?php endif; ?>
 
+<?php if ($u['role'] === 'customer'): $cb = (float)($u['cashback_balance'] ?? 0); ?>
+    <div class="cashback-banner">
+        <?= icon('wallet',20) ?>
+        <div>
+            <span class="cb-label">Keshbek hisobingiz</span>
+            <strong class="cb-amount"><?= money($cb) ?></strong>
+        </div>
+        <span class="cb-hint"><?= $cb > 0 ? 'Buyurtmalarda ishlatishingiz mumkin' : 'Buyurtma bering va keshbek to\'plang' ?></span>
+    </div>
+<?php endif; ?>
+
 <div class="admin-layout">
     <div class="card form-card">
         <h2>Ma'lumotlar</h2>

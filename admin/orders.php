@@ -51,6 +51,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->prepare("UPDATE orders SET cancel_requested=0, cancel_reason=NULL WHERE id=?")
             ->execute([$orderId]);
         $msg = "Bekor so'rovi rad etildi. Buyurtma #$orderId davom etadi.";
+    } elseif ($action === 'cashback') {
+        // Admin shu buyurtma uchun keshbek foizini belgilaydi (yetkazilmagan bo'lsa)
+        $pct = max(0, min(100, (float)($_POST['cashback_percent'] ?? 0)));
+        $pdo = db();
+        $row = $pdo->prepare('SELECT total, delivery_fee, status, cashback_paid FROM orders WHERE id=?');
+        $row->execute([$orderId]);
+        $o = $row->fetch();
+        if ($o) {
+            $goods = max(0, (float)$o['total'] - (float)$o['delivery_fee']);
+            $cb    = calc_cashback($goods, $pct);
+            $pdo->prepare('UPDATE orders SET cashback_percent=?, cashback=? WHERE id=?')
+                ->execute([$pct, $cb, $orderId]);
+            $msg = "Buyurtma #$orderId uchun keshbek: {$pct}% (" . money($cb) . ").";
+        }
     }
 }
 
@@ -142,7 +156,17 @@ require __DIR__ . '/../includes/header.php';
             <?php if ($o['distance_km'] > 0): ?><span class="tag dist"><?= icon('route',13) ?> <?= e($o['distance_km']) ?> km</span><?php endif; ?>
             <span class="tag <?= ($o['delivery_zone'] ?? 'in') === 'out' ? 'zone-out' : 'zone-in' ?>"><?= icon('pin',13) ?> <?= e(zone_label($o['delivery_zone'] ?? 'in')) ?></span>
             <span class="tag fee"><?= icon('truck',13) ?> <?= money($o['delivery_fee']) ?></span>
+            <?php if (($o['cashback'] ?? 0) > 0): ?><span class="tag cashback"><?= icon('wallet',13) ?> Keshbek: <?= money($o['cashback']) ?></span><?php endif; ?>
         </div>
+
+        <form method="post" class="cashback-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="cashback">
+            <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
+            <label><?= icon('wallet',14) ?> Keshbek %</label>
+            <input type="number" name="cashback_percent" value="<?= (float)($o['cashback_percent'] ?? 0) ?>" min="0" max="100" step="1" <?= $o['cashback_paid'] ? 'disabled' : '' ?>>
+            <button class="btn sm" <?= $o['cashback_paid'] ? 'disabled title="Allaqachon hisoblangan"' : '' ?>>Saqlash</button>
+        </form>
 
         <div class="order-controls">
             <form method="post" class="inline-form">

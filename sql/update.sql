@@ -43,6 +43,9 @@ DELIMITER ;
 ALTER TABLE users
   MODIFY COLUMN role ENUM('customer','courier','admin','store') NOT NULL DEFAULT 'customer';
 
+-- users — keshbek balansi (mijoz uchun)
+CALL add_col_if_missing('users','cashback_balance', "cashback_balance DECIMAL(12,2) NOT NULL DEFAULT 0");
+
 -- ============================================================
 --  2) stores jadvali (do'konlar/fastfudlar) — bo'lmasa yaratiladi
 -- ============================================================
@@ -102,6 +105,9 @@ CALL add_col_if_missing('orders','distance_km',      "distance_km DECIMAL(6,2) N
 CALL add_col_if_missing('orders','delivery_zone',    "delivery_zone VARCHAR(12) NOT NULL DEFAULT 'in'");
 CALL add_col_if_missing('orders','delivery_fee',     "delivery_fee DECIMAL(12,2) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','commission',       "commission DECIMAL(12,2) NOT NULL DEFAULT 0");
+CALL add_col_if_missing('orders','cashback_percent', "cashback_percent DECIMAL(5,2) NOT NULL DEFAULT 0");
+CALL add_col_if_missing('orders','cashback',         "cashback DECIMAL(12,2) NOT NULL DEFAULT 0");
+CALL add_col_if_missing('orders','cashback_paid',    "cashback_paid TINYINT(1) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','paid_to_courier',  "paid_to_courier TINYINT(1) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','cancel_requested', "cancel_requested TINYINT(1) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','cancel_reason',    "cancel_reason VARCHAR(255) NULL");
@@ -115,6 +121,7 @@ INSERT IGNORE INTO settings (skey, svalue) VALUES
   ('price_out_city', '15000'),
   ('min_fee',        '5000'),
   ('commission_percent', '20'),
+  ('cashback_percent', '0'),
   ('region',         'Toshkent shahri'),
   ('district',       ''),
   ('map_lat',        '41.3111000'),

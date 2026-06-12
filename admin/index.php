@@ -38,6 +38,8 @@ require __DIR__ . '/../includes/header.php';
 
 <div class="quick-links">
     <a class="btn primary" href="/admin/products.php"><?= icon('plus',16) ?> Mahsulot qo'shish</a>
+    <a class="btn" href="/admin/stats.php"><?= icon('chart',16) ?> Hisobotlar</a>
+    <a class="btn" href="/admin/customers.php"><?= icon('user',16) ?> Mijozlar</a>
     <a class="btn" href="/admin/couriers.php"><?= icon('truck',16) ?> Kuryerlar</a>
     <a class="btn" href="/admin/orders.php"><?= icon('list',16) ?> Buyurtmalar</a>
     <a class="btn" href="/admin/settings.php"><?= icon('settings',16) ?> Sozlamalar</a>

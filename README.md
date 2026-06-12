@@ -298,3 +298,26 @@ Kuryer sahifasi soddalashtirildi va telefon ekraniga moslandi. APK ichida WebVie
 ### Texnik
 - `orders` jadvaliga `cancel_requested`, `cancel_reason` ustunlari qo'shildi.
 - Yangi: `courier_gps_fresh()`, `distance_meters()`, `assets/js/courier-actions.js`.
+
+---
+
+## 🆕 v11 — Admin statistika, mijozlar ro'yxati va keshbek tizimi
+
+### 📊 Admin statistikasi (`admin/stats.php`)
+- Moliyaviy kartalar: umumiy tushum, **admin komissiyasi**, yetkazish haqi, berilgan keshbek.
+- Davr kesimi: bugun / bu hafta / bu oy komissiyasi + 7 kunlik ustunli grafik.
+- **Kuryerlar reytingi**: har bir kuryer qancha yetkazgan, masofa, yetkazish haqi, **admin olgan komissiya**, **foiz (%)** va kuryer sof daromadi. Top-3 medal bilan.
+
+### 👥 Mijozlar ro'yxati (`admin/customers.php`)
+- Barcha mijozlar: buyurtmalar soni, sarflagan summasi, keshbek balansi, holati.
+- Ism/telefon bo'yicha qidiruv; mijozni bloklash; keshbek balansini qo'lda +/− qilish.
+
+### 💸 Keshbek tizimi
+- **Standart keshbek %** sozlamalardan belgilanadi (yangi buyurtmalarga avtomatik qo'llanadi).
+- Admin **har bir buyurtma uchun alohida** keshbek foizini "Buyurtmalar" sahifasidan o'zgartira oladi.
+- Buyurtma **yetkazilganda** keshbek mijoz hisobiga avtomatik qo'shiladi (takrorlanmaydi — `cashback_paid`).
+- Mijoz o'z keshbek balansini **profil** va **buyurtmalar** sahifasida ko'radi; har bir buyurtmada keshbek miqdori ko'rsatiladi.
+
+### Baza
+- `users.cashback_balance`, `orders.cashback_percent`, `orders.cashback`, `orders.cashback_paid` ustunlari + `cashback_percent` sozlamasi.
+- Mavjud baza uchun: `mysql -u root -p BAZA < sql/update.sql` (ma'lumotni o'chirmaydi).

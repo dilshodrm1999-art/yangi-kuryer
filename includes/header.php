@@ -37,6 +37,8 @@ if ($u) {
             ['/admin/stores.php',   'box',      'Do\'kon'],
             ['/admin/products.php', 'package',  'Mahsulot'],
             ['/admin/couriers.php', 'truck',    'Kuryer'],
+            ['/admin/customers.php','user',     'Mijoz'],
+            ['/admin/stats.php',    'chart',    'Hisobot'],
             ['/admin/settings.php', 'settings', 'Sozlama'],
         ];
     }
