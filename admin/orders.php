@@ -33,6 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($status === 'delivered') {
                         settle_delivery($pdo, $order);
                     }
+                    if ($status === 'cancelled') {
+                        refund_cashback_if_used($pdo, $orderId);
+                    }
                 }
                 $pdo->commit();
                 $msg = "Status yangilandi.";
@@ -43,28 +46,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'approve_cancel') {
         // Kuryerning bekor qilish so'rovini tasdiqlash -> buyurtma bekor bo'ladi
-        db()->prepare("UPDATE orders SET status='cancelled', cancel_requested=0 WHERE id=?")
-            ->execute([$orderId]);
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare("UPDATE orders SET status='cancelled', cancel_requested=0 WHERE id=?")
+                ->execute([$orderId]);
+            refund_cashback_if_used($pdo, $orderId);
+            $pdo->commit();
+        } catch (Throwable $ex) {
+            $pdo->rollBack();
+        }
         $msg = "Buyurtma #$orderId bekor qilindi (kuryer so'rovi tasdiqlandi).";
     } elseif ($action === 'reject_cancel') {
         // So'rovni rad etish -> buyurtma davom etadi
         db()->prepare("UPDATE orders SET cancel_requested=0, cancel_reason=NULL WHERE id=?")
             ->execute([$orderId]);
         $msg = "Bekor so'rovi rad etildi. Buyurtma #$orderId davom etadi.";
-    } elseif ($action === 'cashback') {
-        // Admin shu buyurtma uchun keshbek foizini belgilaydi (yetkazilmagan bo'lsa)
-        $pct = max(0, min(100, (float)($_POST['cashback_percent'] ?? 0)));
-        $pdo = db();
-        $row = $pdo->prepare('SELECT total, delivery_fee, status, cashback_paid FROM orders WHERE id=?');
-        $row->execute([$orderId]);
-        $o = $row->fetch();
-        if ($o) {
-            $goods = max(0, (float)$o['total'] - (float)$o['delivery_fee']);
-            $cb    = calc_cashback($goods, $pct);
-            $pdo->prepare('UPDATE orders SET cashback_percent=?, cashback=? WHERE id=?')
-                ->execute([$pct, $cb, $orderId]);
-            $msg = "Buyurtma #$orderId uchun keshbek: {$pct}% (" . money($cb) . ").";
-        }
     }
 }
 
@@ -156,35 +153,27 @@ require __DIR__ . '/../includes/header.php';
             <?php if ($o['distance_km'] > 0): ?><span class="tag dist"><?= icon('route',13) ?> <?= e($o['distance_km']) ?> km</span><?php endif; ?>
             <span class="tag <?= ($o['delivery_zone'] ?? 'in') === 'out' ? 'zone-out' : 'zone-in' ?>"><?= icon('pin',13) ?> <?= e(zone_label($o['delivery_zone'] ?? 'in')) ?></span>
             <span class="tag fee"><?= icon('truck',13) ?> <?= money($o['delivery_fee']) ?></span>
-            <?php if (($o['cashback'] ?? 0) > 0): ?><span class="tag cashback"><?= icon('wallet',13) ?> Keshbek: <?= money($o['cashback']) ?></span><?php endif; ?>
+            <?php if (($o['cashback'] ?? 0) > 0): ?><span class="tag cashback"><?= icon('wallet',13) ?> Keshbek: +<?= money($o['cashback']) ?></span><?php endif; ?>
+            <?php if (($o['cashback_used'] ?? 0) > 0): ?><span class="tag cashback"><?= icon('wallet',13) ?> Ishlatilgan: −<?= money($o['cashback_used']) ?></span><?php endif; ?>
         </div>
 
-        <form method="post" class="cashback-form">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="cashback">
-            <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
-            <label><?= icon('wallet',14) ?> Keshbek %</label>
-            <input type="number" name="cashback_percent" value="<?= (float)($o['cashback_percent'] ?? 0) ?>" min="0" max="100" step="1" <?= $o['cashback_paid'] ? 'disabled' : '' ?>>
-            <button class="btn sm" <?= $o['cashback_paid'] ? 'disabled title="Allaqachon hisoblangan"' : '' ?>>Saqlash</button>
-        </form>
-
         <div class="order-controls">
-            <form method="post" class="inline-form">
+            <form method="post" class="inline-form js-confirm2" data-confirm1="Buyurtma #<?= $o['id'] ?> kuryerini o'zgartirmoqchimisiz?" data-confirm2="Ishonchingiz komilmi? Bu o'zgarish kuryerga darhol ta'sir qiladi.">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="assign">
                 <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
-                <select name="courier_id" onchange="this.form.submit()">
+                <select name="courier_id" class="js-confirm-control">
                     <option value="0">— Kuryer tanlash —</option>
                     <?php foreach ($couriers as $c): ?>
                         <option value="<?= $c['id'] ?>" <?= $o['courier_id'] == $c['id'] ? 'selected' : '' ?>><?= e($c['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </form>
-            <form method="post" class="inline-form">
+            <form method="post" class="inline-form js-confirm2" data-confirm1="Buyurtma #<?= $o['id'] ?> holatini o'zgartirmoqchimisiz?" data-confirm2="Ishonchingiz komilmi? Tasdiqlasangiz holat darhol o'zgaradi.">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="status">
                 <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
-                <select name="status" onchange="this.form.submit()">
+                <select name="status" class="js-confirm-control">
                     <?php foreach (['new','accepted','picked_up','on_way','delivered','cancelled'] as $st): ?>
                         <option value="<?= $st ?>" <?= $o['status'] === $st ? 'selected' : '' ?>><?= e(status_label($st)) ?></option>
                     <?php endforeach; ?>
@@ -199,4 +188,23 @@ require __DIR__ . '/../includes/header.php';
     </div>
 <?php endforeach; ?>
 </div>
+<script>
+// Admin buyurtma o'zgartirishlari: 2 marta tasdiqlash
+(function(){
+  document.querySelectorAll('.js-confirm2').forEach(function(form){
+    var ctrl = form.querySelector('.js-confirm-control');
+    if(!ctrl) return;
+    var prev = ctrl.value;
+    ctrl.addEventListener('change', function(){
+      var c1 = form.dataset.confirm1 || "O'zgartirishni tasdiqlaysizmi?";
+      var c2 = form.dataset.confirm2 || "Ishonchingiz komilmi?";
+      if (confirm(c1) && confirm(c2)) {
+        form.submit();
+      } else {
+        ctrl.value = prev; // bekor qilindi — eski qiymatga qaytaramiz
+      }
+    });
+  });
+})();
+</script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

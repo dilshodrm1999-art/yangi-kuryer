@@ -664,6 +664,23 @@ function calc_cashback(float $total, float $percent): float
     return round($total * $percent / 100, -2);
 }
 
+/**
+ * Buyurtma bekor qilinganda ishlatilgan keshbekni mijozga qaytarish.
+ * $pdo ochiq tranzaksiya ichida chaqirilishi mumkin yoki oddiy.
+ */
+function refund_cashback_if_used(PDO $pdo, int $orderId): void
+{
+    $row = $pdo->prepare('SELECT customer_id, cashback_used FROM orders WHERE id = ?');
+    $row->execute([$orderId]);
+    $o = $row->fetch();
+    if ($o && (float)$o['cashback_used'] > 0) {
+        $pdo->prepare('UPDATE users SET cashback_balance = cashback_balance + ? WHERE id = ?')
+            ->execute([(float)$o['cashback_used'], $o['customer_id']]);
+        // Takror qaytarmaslik uchun nolga tushiramiz
+        $pdo->prepare('UPDATE orders SET cashback_used = 0 WHERE id = ?')->execute([$orderId]);
+    }
+}
+
 /* ---------- Ikonkalar (inline SVG, zamonaviy) ---------- */
 
 function icon(string $name, int $size = 22): string

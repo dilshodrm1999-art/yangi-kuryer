@@ -74,22 +74,39 @@ try {
     }
     $total = $goods + $fee;
 
-    // Keshbek: admin belgilagan foiz bo'yicha (mahsulot summasidan)
+    // Keshbek: admin belgilagan UMUMIY foiz bo'yicha (mahsulot summasidan) — barcha mijozlarga avtomatik
     $cashbackPct = (float)setting('cashback_percent', 0);
     $cashback    = calc_cashback($goods, $cashbackPct);
+
+    // Mijoz keshbek balansini ishlatmoqchi bo'lsa — jami summadan ayiramiz
+    $me = current_user();
+    $cbBalance  = (float)($me['cashback_balance'] ?? 0);
+    $useCashback = isset($_POST['use_cashback']) ? 1 : 0;
+    $cashbackUsed = 0.0;
+    if ($useCashback && $cbBalance > 0) {
+        // Faqat jami summagacha ishlatish mumkin (manfiy bo'lmasin)
+        $cashbackUsed = min($cbBalance, $total);
+        $total -= $cashbackUsed;
+    }
 
     $stmt = $pdo->prepare(
         'INSERT INTO orders
             (customer_id, status, address, lat, lng, pickup_lat, pickup_lng, pickup_name, pickup_address,
-             distance_km, delivery_zone, delivery_fee, cashback_percent, cashback, phone, note, total)
-         VALUES (?, "new", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             distance_km, delivery_zone, delivery_fee, cashback_percent, cashback, cashback_used, phone, note, total)
+         VALUES (?, "new", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         current_user()['id'], $address, $lat, $lng, $pickupLat, $pickupLng,
         $pickup['name'] ?? null, $pickup['address'] ?? null,
-        $distance, $zone, $fee, $cashbackPct, $cashback, $phone, $note, $total,
+        $distance, $zone, $fee, $cashbackPct, $cashback, $cashbackUsed, $phone, $note, $total,
     ]);
     $orderId = (int)$pdo->lastInsertId();
+
+    // Ishlatilgan keshbekni mijoz balansidan ayiramiz
+    if ($cashbackUsed > 0) {
+        $pdo->prepare('UPDATE users SET cashback_balance = GREATEST(0, cashback_balance - ?) WHERE id = ?')
+            ->execute([$cashbackUsed, current_user()['id']]);
+    }
 
     $itemStmt = $pdo->prepare(
         'INSERT INTO order_items (order_id, product_id, name, price, quantity)

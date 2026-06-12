@@ -321,3 +321,27 @@ Kuryer sahifasi soddalashtirildi va telefon ekraniga moslandi. APK ichida WebVie
 ### Baza
 - `users.cashback_balance`, `orders.cashback_percent`, `orders.cashback`, `orders.cashback_paid` ustunlari + `cashback_percent` sozlamasi.
 - Mavjud baza uchun: `mysql -u root -p BAZA < sql/update.sql` (ma'lumotni o'chirmaydi).
+
+---
+
+## 🆕 v12 — Keshbek ishlatish, 2-bosqich tasdiq, xarita persistensiyasi
+
+### 💳 Keshbekni buyurtmada ishlatish
+- Mijoz savatda **"Keshbekni ishlatish"** belgisini qo'yib, to'plangan keshbegini jami summadan ayirishi mumkin.
+- Jami summa jonli yangilanadi; ishlatilgan keshbek balansidan yechiladi.
+- Buyurtma bekor qilinsa — ishlatilgan keshbek **avtomatik qaytariladi**.
+
+### 🤖 Keshbek faqat umumiy sozlamada
+- Admin endi har bir buyurtmaga alohida emas, **bitta umumiy foiz** (Sozlamalar) belgilaydi — u **barcha mijozning barcha xaridiga avtomatik** qo'llanadi.
+- Buyurtmalar sahifasida keshbek faqat **ko'rsatiladi** (tahrirlanmaydi).
+
+### ✅ Admin 2 marta tasdiqlash
+- Admin buyurtma kuryerini yoki holatini o'zgartirsa, tizim **ketma-ket 2 marta** "Ishonchingiz komilmi?" deб so'raydi. Bekor qilinsa, eski qiymat saqlanadi.
+
+### 🗺️ Xarita sozlamasi saqlanib qoladi
+- Admin xaritani sozlagach (hudud, markaz, zoom), **qaysi joy belgilangan bo'lsa o'sha doimiy** qoladi — endi har safar Toshkentga qaytmaydi.
+- Hududni o'zgartirishda, agar shahar chizig'i allaqachon chizilgan bo'lsa, tasdiq so'raladi.
+- Chizilgan **shahar chegarasi (poligon) saqlanadi** va xaritada doimiy ko'rinadi.
+
+### Baza
+- `orders.cashback_used` ustuni qo'shildi. Mavjud baza uchun: `mysql -u root -p BAZA < sql/update.sql`.

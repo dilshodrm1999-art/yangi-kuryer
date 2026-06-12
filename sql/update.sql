@@ -107,6 +107,7 @@ CALL add_col_if_missing('orders','delivery_fee',     "delivery_fee DECIMAL(12,2)
 CALL add_col_if_missing('orders','commission',       "commission DECIMAL(12,2) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','cashback_percent', "cashback_percent DECIMAL(5,2) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','cashback',         "cashback DECIMAL(12,2) NOT NULL DEFAULT 0");
+CALL add_col_if_missing('orders','cashback_used',    "cashback_used DECIMAL(12,2) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','cashback_paid',    "cashback_paid TINYINT(1) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','paid_to_courier',  "paid_to_courier TINYINT(1) NOT NULL DEFAULT 0");
 CALL add_col_if_missing('orders','cancel_requested', "cancel_requested TINYINT(1) NOT NULL DEFAULT 0");

@@ -136,12 +136,19 @@
   });
 
   // --- Hudud o'zgarganda xaritani markazga olib o'tish ---
+  // Xarita allaqachon sozlangan bo'lsa (poligon yoki ombor belgilangan),
+  // hududni o'zgartirishda tasdiq so'raymiz — tasodifan markaz o'zgarib ketmasin.
   regionSel.addEventListener('change', function () {
     var info = REGIONS[this.value];
     fillDistricts(this.value, '');
-    if (info) {
-      map.setView([info.lat, info.lng], info.zoom || 12);
+    if (!info) return;
+    var configured = polyPoints.length >= 3;
+    if (configured) {
+      if (!confirm('Hududni o\'zgartirsangiz, xarita yangi hudud markaziga o\'tadi. Belgilangan shahar chizig\'i saqlanib qoladi. Davom etamizmi?')) {
+        return;
+      }
     }
+    map.setView([info.lat, info.lng], info.zoom || 12);
   });
   districtSel.addEventListener('change', function () {
     // Tuman tanlansa, viloyat markazida qoladi (aniq tuman koordinatasi yo'q)

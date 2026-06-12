@@ -90,6 +90,9 @@ require __DIR__ . '/includes/header.php';
             <?php if (($o['cashback'] ?? 0) > 0): ?>
                 <span class="tag cashback"><?= icon('wallet',13) ?> Keshbek <?= ($o['status']==='delivered') ? '+' : '' ?><?= money($o['cashback']) ?></span>
             <?php endif; ?>
+            <?php if (($o['cashback_used'] ?? 0) > 0): ?>
+                <span class="tag cashback"><?= icon('wallet',13) ?> Ishlatildi −<?= money($o['cashback_used']) ?></span>
+            <?php endif; ?>
         </div>
 
         <?php if ($active && $o['courier_name']): ?>

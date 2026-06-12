@@ -167,6 +167,7 @@ CREATE TABLE orders (
     commission    DECIMAL(12,2) NOT NULL DEFAULT 0,
     cashback_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
     cashback      DECIMAL(12,2) NOT NULL DEFAULT 0,
+    cashback_used DECIMAL(12,2) NOT NULL DEFAULT 0,
     cashback_paid TINYINT(1)    NOT NULL DEFAULT 0,
     phone         VARCHAR(20)   NULL,
     note          TEXT          NULL,

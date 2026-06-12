@@ -22,14 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($region !== '' && in_array($region, uz_region_names(), true)) {
         set_setting('region', $region);
         set_setting('district', $district);
-        $info = uz_region_info($region);
-        // Xarita markazini hudud markaziga moslash (agar admin alohida belgilamagan bo'lsa)
-        if ($info) {
-            set_setting('map_lat',  (string)(float)($_POST['map_lat']  ?? $info['lat']));
-            set_setting('map_lng',  (string)(float)($_POST['map_lng']  ?? $info['lng']));
-            set_setting('map_zoom', (string)(int)($_POST['map_zoom'] ?? $info['zoom']));
-        }
     }
+
+    // Xarita markazi va zoom — xarita qayerda turgan bo'lsa o'shani saqlaymiz
+    // (hududga bog'liq emas — admin qayerni belgilasa, o'sha doimiy qoladi)
+    if (($_POST['map_lat'] ?? '') !== '')  set_setting('map_lat',  (string)(float)$_POST['map_lat']);
+    if (($_POST['map_lng'] ?? '') !== '')  set_setting('map_lng',  (string)(float)$_POST['map_lng']);
+    if (($_POST['map_zoom'] ?? '') !== '') set_setting('map_zoom', (string)(int)$_POST['map_zoom']);
 
     // Ombor nomi va joylashuvi
     set_setting('store_name', trim($_POST['store_name'] ?? 'Ombor'));

@@ -153,6 +153,16 @@ require __DIR__ . '/includes/header.php';
 
             <div class="summary-row"><span>Mahsulotlar</span><strong><?= money($total) ?></strong></div>
             <div class="summary-row"><span>Yo'l (do'kondan manzilgacha) <small id="distTxt"></small></span><strong id="feeTxt">—</strong></div>
+
+            <?php $cbBal = (float)(current_user()['cashback_balance'] ?? 0); ?>
+            <?php if ($cbBal > 0): ?>
+                <label class="cb-use">
+                    <input type="checkbox" name="use_cashback" id="useCashback" value="1">
+                    <span><?= icon('wallet',15) ?> Keshbekni ishlatish (<strong><?= money($cbBal) ?></strong>)</span>
+                </label>
+                <div class="summary-row cb-row" id="cbRow" style="display:none"><span>Keshbek chegirmasi</span><strong id="cbTxt">−0</strong></div>
+            <?php endif; ?>
+
             <div class="summary-total"><span>Jami</span><strong id="grandTxt"><?= money($total) ?></strong></div>
             <p class="muted small" id="feeHint" style="margin-top:6px"><?= icon('route',13) ?> Manzilni xaritada belgilang — yo'l haqi avtomatik hisoblanadi.</p>
 
@@ -175,7 +185,9 @@ window.PICKUP = {lat: <?= $pickupLat ?>, lng: <?= $pickupLng ?>, name: <?= json_
 (function(){
   var PRICE_IN=<?= (int)$priceIn ?>, PRICE_OUT=<?= (int)$priceOut ?>, MIN_FEE=<?= (int)$minFee ?>;
   var GOODS=<?= (int)$total ?>;
+  var CB_BAL=<?= (int)(current_user()['cashback_balance'] ?? 0) ?>;
   var POLY=window.CITY_POLYGON||[];
+  var lastFee=0;
   function fmt(n){return new Intl.NumberFormat('ru-RU').format(Math.round(n))+" so'm";}
   // Ray-casting: nuqta poligon ichidami?
   function inPoly(lat,lng){
@@ -188,19 +200,34 @@ window.PICKUP = {lat: <?= $pickupLat ?>, lng: <?= $pickupLng ?>, name: <?= json_
     }
     return inside;
   }
+  function recalc(){
+    var total = GOODS + lastFee;
+    var useCb = document.getElementById('useCashback');
+    var cbRow = document.getElementById('cbRow');
+    var used = 0;
+    if (useCb && useCb.checked) {
+      used = Math.min(CB_BAL, total);
+      if (cbRow) { cbRow.style.display=''; document.getElementById('cbTxt').textContent='−'+fmt(used); }
+    } else if (cbRow) {
+      cbRow.style.display='none';
+    }
+    document.getElementById('grandTxt').textContent = fmt(total - used);
+  }
   // map.js real yo'l masofasini hisoblaganda chaqiradi (km = yo'l masofasi)
   window.onRouteResult=function(km,lat,lng){
     if(km===null||isNaN(km)) return;
     var inCity=inPoly(lat,lng);
     var perKm=inCity?PRICE_IN:PRICE_OUT;
-    var fee=Math.max(Math.round(km*perKm/100)*100, MIN_FEE);
+    lastFee=Math.max(Math.round(km*perKm/100)*100, MIN_FEE);
     var zoneTxt=inCity?'🏙️ shahar ichi':'🛣️ shahar tashqarisi';
     document.getElementById('distTxt').textContent='('+km.toFixed(1)+' km · '+zoneTxt+')';
-    document.getElementById('feeTxt').textContent=fmt(fee);
-    document.getElementById('grandTxt').textContent=fmt(GOODS+fee);
+    document.getElementById('feeTxt').textContent=fmt(lastFee);
     var hint=document.getElementById('feeHint');
     if(hint) hint.innerHTML='🚲 '+window.PICKUP.name+' → manzil: <strong>'+km.toFixed(1)+' km</strong> (yo\'l bo\'yicha), '+zoneTxt+'. 1 km = '+fmt(perKm);
+    recalc();
   };
+  var cbToggle=document.getElementById('useCashback');
+  if(cbToggle) cbToggle.addEventListener('change', recalc);
 })();
 </script>
 <?php endif; ?>

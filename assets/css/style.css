@@ -552,3 +552,13 @@ label.check input{width:auto;margin:0}
 @media (max-width:600px){
   .cashback-banner .cb-hint{display:none}
 }
+
+
+
+/* ============ v12: Keshbek ishlatish (checkout) ============ */
+.cb-use{display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #bbf7d0;
+  border-radius:12px;padding:11px 13px;margin:10px 0;cursor:pointer;font-size:14px}
+.cb-use input{width:18px;height:18px;accent-color:#16a34a;flex-shrink:0}
+.cb-use span{display:flex;align-items:center;gap:6px;color:#15803d;font-weight:600}
+.summary-row.cb-row{color:#15803d;font-weight:700}
+.summary-row.cb-row strong{color:#15803d}
