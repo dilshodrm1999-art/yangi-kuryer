@@ -263,3 +263,14 @@ Kuryer sahifasi soddalashtirildi va telefon ekraniga moslandi. APK ichida WebVie
 - Kuryerda aktiv buyurtma bo'lsa (qabul qilingan / olingan / yo'lda) — unga **yangi buyurtmalar ko'rsatilmaydi** va qabul qila olmaydi.
 - Joriy buyurtmani **"Yetkazdim"** (yoki bekor) qilgach, yangi buyurtmalar avtomatik qaytadi (sahifa o'zi yangilanadi, signal qayta ishlaydi).
 - Bu qoida ham serverda (`accept` da tekshiruv), ham API'da (`busy` flag), ham frontendda qo'llanadi — chetlab o'tib bo'lmaydi.
+
+
+---
+
+## 🆕 v9 — Haqiqiy yo'lda eng qisqa masofa
+
+- Xarita endi bir nechta yo'l variantini so'rab (`alternatives=true`), **eng qisqa haqiqiy yo'l** masofasini tanlaydi.
+- **Ikkita routing serveri**: biri ishlamasa, ikkinchisi (`router.project-osrm.org`) avtomatik sinaladi.
+- Xaritada yo'l chizig'i ustida **masofa + taxminiy vaqt** yorlig'i (🚲 km · ~daq) ko'rsatiladi.
+- Xarita do'kon va manzil ikkalasini ko'rsatadigan qilib avtomatik moslashadi (fit-bounds).
+- Server (`route_distance_km`) va xarita bir xil mantiqdan foydalanadi — narx mos keladi.

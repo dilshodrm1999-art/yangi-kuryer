@@ -36,7 +36,7 @@ function security_headers(): void
          . "img-src 'self' data: https:; "
          . "style-src 'self' 'unsafe-inline' https://unpkg.com; "
          . "script-src 'self' 'unsafe-inline' https://unpkg.com; "
-         . "connect-src 'self' https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://routing.openstreetmap.de; "
+         . "connect-src 'self' https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://routing.openstreetmap.de https://router.project-osrm.org; "
          . "font-src 'self' data:; "
          . "object-src 'none'; "
          . "base-uri 'self'; "
@@ -377,9 +377,9 @@ function haversine_km($lat1, $lng1, $lat2, $lng2): float
 }
 
 /**
- * Velosiped (bike) yo'l harakatiga ko'ra haqiqiy yo'l masofasi (km).
- * OSRM ochiq xizmatidan foydalanadi (kalit talab qilmaydi).
- * Server xato bersa yoki internet bo'lmasa — Haversine (to'g'ri chiziq) ga qaytadi.
+ * Velosiped (bike) yo'l harakatiga ko'ra HAQIQIY YO'L bo'yicha ENG QISQA masofa (km).
+ * Bir nechta yo'l variantidan eng qisqasini tanlaydi (alternatives=true).
+ * Bir server ishlamasa — ikkinchisini sinaydi. Umuman ishlamasa — Haversine*1.3.
  *
  * Qaytaradi: ['km' => float, 'source' => 'route'|'straight']
  */
@@ -390,22 +390,31 @@ function route_distance_km($lat1, $lng1, $lat2, $lng2): array
         return ['km' => 0.0, 'source' => 'straight'];
     }
 
-    // OSRM velosiped profili: lon,lat;lon,lat
-    $url = sprintf(
-        'https://routing.openstreetmap.de/routed-bike/route/v1/driving/%F,%F;%F,%F?overview=false',
-        (float)$lng1, (float)$lat1, (float)$lng2, (float)$lat2
-    );
+    $servers = [
+        'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',
+        'https://router.project-osrm.org/route/v1/driving/',
+    ];
+    $coords = sprintf('%F,%F;%F,%F', (float)$lng1, (float)$lat1, (float)$lng2, (float)$lat2);
+    $query  = '?overview=false&alternatives=true';
 
-    $json = @file_get_contents($url, false, stream_context_create([
-        'http' => ['timeout' => 4, 'header' => "User-Agent: DostavkaApp/1.0\r\n"],
-    ]));
-
-    if ($json !== false) {
+    foreach ($servers as $base) {
+        $json = @file_get_contents($base . $coords . $query, false, stream_context_create([
+            'http' => ['timeout' => 4, 'header' => "User-Agent: DostavkaApp/1.0\r\n"],
+        ]));
+        if ($json === false) {
+            continue;
+        }
         $data = json_decode($json, true);
-        if (isset($data['routes'][0]['distance'])) {
-            $km = round((float)$data['routes'][0]['distance'] / 1000, 2);
-            if ($km > 0) {
-                return ['km' => $km, 'source' => 'route'];
+        if (!empty($data['routes'])) {
+            // Eng qisqa masofali variantni tanlaymiz
+            $min = null;
+            foreach ($data['routes'] as $r) {
+                if (isset($r['distance']) && ($min === null || $r['distance'] < $min)) {
+                    $min = $r['distance'];
+                }
+            }
+            if ($min !== null && $min > 0) {
+                return ['km' => round($min / 1000, 2), 'source' => 'route'];
             }
         }
     }

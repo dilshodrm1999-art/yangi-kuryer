@@ -496,3 +496,11 @@ label.check input{width:auto;margin:0}
 /* Kuryer band holati (yangi buyurtma ko'rsatilmaydi) */
 .empty-box.busy{background:#fff7ed;border-color:#fed7aa;color:#b54708}
 .empty-box.busy strong{color:#92400e}
+
+
+
+/* Xaritadagi yo'l masofasi yorlig'i (do'kon -> manzil) */
+.route-tip{background:#2563eb;color:#fff;border:none;border-radius:20px;font-weight:700;
+  font-size:12px;padding:3px 10px;box-shadow:0 2px 8px rgba(37,99,235,.4)}
+.route-tip::before{display:none}
+.leaflet-tooltip.route-tip{white-space:nowrap}

@@ -37,8 +37,15 @@
     return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
   }
 
-  // Do'kondan mijozgacha VELOSIPED yo'lini chizish (OSRM) + masofani aniqlash.
-  // Yo'l xizmati ishlamasa to'g'ri chiziqqa qaytadi.
+  // Bir nechta routing serveri (biri ishlamasa keyingisi sinaladi)
+  var ROUTERS = [
+    'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',
+    'https://router.project-osrm.org/route/v1/driving/'
+  ];
+
+  // Do'kondan mijozgacha HAQIQIY YO'L bo'yicha ENG QISQA masofani aniqlash.
+  // alternatives=true bilan bir nechta variant olib, eng qisqasini tanlaymiz.
+  // Bir server ishlamasa keyingisiga o'tadi; umuman ishlamasa to'g'ri chiziq*1.3.
   function drawRoute(lat, lng) {
     if (!window.PICKUP || !window.PICKUP.lat) {
       if (typeof window.onRouteResult === 'function') window.onRouteResult(null, lat, lng);
@@ -48,36 +55,62 @@
     var myReq = ++routeReqId;
 
     // Vaqtinchalik to'g'ri chiziq (yo'l kelguncha)
-    var fallbackPts = [[p.lat, p.lng], [lat, lng]];
-    setLine(fallbackPts, true);
+    setLine([[p.lat, p.lng], [lat, lng]], true);
 
-    var url = 'https://routing.openstreetmap.de/routed-bike/route/v1/driving/' +
-              p.lng + ',' + p.lat + ';' + lng + ',' + lat + '?overview=full&geometries=geojson';
+    var coordStr = p.lng + ',' + p.lat + ';' + lng + ',' + lat;
+    var query = '?overview=full&geometries=geojson&alternatives=true';
 
-    fetch(url)
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (myReq !== routeReqId) return; // eskirgan so'rov
-        if (d && d.routes && d.routes[0]) {
-          var coords = d.routes[0].geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
-          setLine(coords, false);
-          var km = d.routes[0].distance / 1000;
-          if (typeof window.onRouteResult === 'function') window.onRouteResult(km, lat, lng);
-        } else { throw new Error('no route'); }
-      })
-      .catch(function () {
-        if (myReq !== routeReqId) return;
-        var km = straightKm(p.lat, p.lng, lat, lng) * 1.3;
-        if (typeof window.onRouteResult === 'function') window.onRouteResult(km, lat, lng);
-      });
+    function tryRouter(idx) {
+      if (idx >= ROUTERS.length) { fail(); return; }
+      fetch(ROUTERS[idx] + coordStr + query)
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (d) {
+          if (myReq !== routeReqId) return; // eskirgan so'rov
+          if (d && d.routes && d.routes.length) {
+            // ENG QISQA masofali variantni tanlaymiz
+            var best = d.routes[0];
+            for (var i = 1; i < d.routes.length; i++) {
+              if (d.routes[i].distance < best.distance) best = d.routes[i];
+            }
+            var coords = best.geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
+            setLine(coords, false);
+            var km = best.distance / 1000;
+            showRouteInfo(km, best.duration);
+            if (typeof window.onRouteResult === 'function') window.onRouteResult(km, lat, lng);
+          } else { throw new Error('no route'); }
+        })
+        .catch(function () {
+          if (myReq !== routeReqId) return;
+          tryRouter(idx + 1); // keyingi serverni sinaymiz
+        });
+    }
+
+    function fail() {
+      if (myReq !== routeReqId) return;
+      var km = straightKm(p.lat, p.lng, lat, lng) * 1.3;
+      showRouteInfo(km, null);
+      if (typeof window.onRouteResult === 'function') window.onRouteResult(km, lat, lng);
+    }
+
+    tryRouter(0);
+  }
+
+  // Yo'l masofasi/vaqtini chiziq ustida ko'rsatish
+  function showRouteInfo(km, durSec) {
+    if (!routeLine) return;
+    var txt = '🚲 ' + km.toFixed(1) + ' km';
+    if (durSec) txt += ' · ~' + Math.max(1, Math.round(durSec / 60)) + ' daq';
+    routeLine.bindTooltip(txt, { permanent: true, direction: 'center', className: 'route-tip' });
   }
 
   function setLine(pts, dashed) {
     if (routeLine) { map.removeLayer(routeLine); }
     routeLine = L.polyline(pts, {
-      color: '#2563eb', weight: 4, opacity: 0.85,
+      color: '#2563eb', weight: 5, opacity: 0.85,
       dashArray: dashed ? '8 6' : null
     }).addTo(map);
+    // Do'kon va manzil ikkalasi ko'rinishi uchun xaritani moslash
+    try { map.fitBounds(routeLine.getBounds(), { padding: [40, 40], maxZoom: 16 }); } catch (e) {}
   }
 
   var marker = null;
