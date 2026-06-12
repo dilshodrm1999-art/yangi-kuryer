@@ -11,6 +11,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = db();
 
     if ($action === 'accept') {
+        // Kuryer band bo'lsa (aktiv buyurtmasi bo'lsa) yangi qabul qila olmaydi
+        $busy = $pdo->prepare(
+            "SELECT COUNT(*) FROM orders
+             WHERE courier_id = ? AND status IN ('accepted','picked_up','on_way')"
+        );
+        $busy->execute([$me['id']]);
+        if ((int)$busy->fetchColumn() > 0) {
+            $_SESSION['flash'] = 'Avval joriy buyurtmangizni yakunlang, keyin yangisini oling.';
+            redirect('/courier/index.php');
+        }
+
         $stmt = $pdo->prepare(
             "UPDATE orders SET courier_id = ?, status = 'accepted'
              WHERE id = ? AND courier_id IS NULL AND status = 'new'"
@@ -44,14 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('/courier/index.php');
 }
 
-// ---- Mavjud (tayinlanmagan) yangi buyurtmalar ----
-$available = db()->query(
-    "SELECT o.*, u.name AS customer_name
-     FROM orders o JOIN users u ON u.id = o.customer_id
-     WHERE o.status = 'new' AND o.courier_id IS NULL
-     ORDER BY o.created_at ASC"
-)->fetchAll();
-
 // ---- Faqat AKTIV buyurtmalar (tarix alohida sahifada) ----
 $stmt = db()->prepare(
     "SELECT o.*, u.name AS customer_name
@@ -61,6 +64,20 @@ $stmt = db()->prepare(
 );
 $stmt->execute([$me['id']]);
 $active = $stmt->fetchAll();
+
+$isBusy = count($active) > 0;
+
+// ---- Mavjud (tayinlanmagan) yangi buyurtmalar ----
+// Kuryer band bo'lsa yangi buyurtmalar ko'rsatilmaydi.
+$available = [];
+if (!$isBusy) {
+    $available = db()->query(
+        "SELECT o.*, u.name AS customer_name
+         FROM orders o JOIN users u ON u.id = o.customer_id
+         WHERE o.status = 'new' AND o.courier_id IS NULL
+         ORDER BY o.created_at ASC"
+    )->fetchAll();
+}
 
 $itemsByOrder = load_order_items(array_merge($available, $active));
 
@@ -118,19 +135,32 @@ require __DIR__ . '/_card.php';
 <?php endif; ?>
 
 <!-- Yangi (bo'sh) buyurtmalar -->
-<div class="cr-section-head">
-    <h2><?= icon('package',18) ?> Yangi buyurtmalar</h2>
-    <span class="count-pill" id="availCount"><?= count($available) ?></span>
-</div>
-<?php if (!$available): ?>
-    <div class="empty-box"><?= icon('package',30) ?><p>Hozircha yangi buyurtma yo'q. Kutib turing 🔔</p></div>
-<?php else: ?>
-    <div class="cr-list">
-        <?php foreach ($available as $o) courier_card($o, $itemsByOrder[$o['id']] ?? [], 'available'); ?>
+<?php if ($isBusy): ?>
+    <div class="cr-section-head">
+        <h2><?= icon('package',18) ?> Yangi buyurtmalar</h2>
     </div>
+    <div class="empty-box busy">
+        <?= icon('truck',30) ?>
+        <p><strong>Siz hozir bandsiz.</strong><br>Joriy buyurtmani yetkazib bo'lgach, yangi buyurtmalar shu yerda ko'rinadi.</p>
+    </div>
+<?php else: ?>
+    <div class="cr-section-head">
+        <h2><?= icon('package',18) ?> Yangi buyurtmalar</h2>
+        <span class="count-pill" id="availCount"><?= count($available) ?></span>
+    </div>
+    <?php if (!$available): ?>
+        <div class="empty-box"><?= icon('package',30) ?><p>Hozircha yangi buyurtma yo'q. Kutib turing 🔔</p></div>
+    <?php else: ?>
+        <div class="cr-list">
+            <?php foreach ($available as $o) courier_card($o, $itemsByOrder[$o['id']] ?? [], 'available'); ?>
+        </div>
+    <?php endif; ?>
 <?php endif; ?>
 
-<script>window.__lastOrderId = <?= $available ? max(array_map(fn($o)=>(int)$o['id'],$available)) : 0 ?>;</script>
+<script>
+window.__lastOrderId = <?= $available ? max(array_map(fn($o)=>(int)$o['id'],$available)) : 0 ?>;
+window.__courierBusy = <?= $isBusy ? 'true' : 'false' ?>;
+</script>
 <script src="/assets/js/courier-track.js"></script>
 <script src="/assets/js/courier-orders.js"></script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

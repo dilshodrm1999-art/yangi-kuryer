@@ -2,7 +2,7 @@
 /**
  * Kuryer uchun: mavjud (tayinlanmagan, yangi) buyurtmalar soni va oxirgi ID.
  * Signal (tovush) bildirishnomasi uchun ishlatiladi.
- * Javob: { ok, count, latest_id }
+ * Javob: { ok, count, latest_id, busy }
  */
 require_once __DIR__ . '/../includes/functions.php';
 header('Content-Type: application/json; charset=utf-8');
@@ -14,7 +14,20 @@ if (!$u || $u['role'] !== 'courier') {
     exit;
 }
 
-// Tayinlanmagan yangi buyurtmalar + shu kuryerga yangi tayinlanganlar
+// Kuryer band bo'lsa (aktiv buyurtmasi bor) — yangi buyurtmalar ko'rsatilmaydi
+$busyStmt = db()->prepare(
+    "SELECT COUNT(*) FROM orders
+     WHERE courier_id = ? AND status IN ('accepted','picked_up','on_way')"
+);
+$busyStmt->execute([$u['id']]);
+$busy = (int)$busyStmt->fetchColumn() > 0;
+
+if ($busy) {
+    echo json_encode(['ok' => true, 'count' => 0, 'latest_id' => 0, 'busy' => true]);
+    exit;
+}
+
+// Tayinlanmagan yangi buyurtmalar
 $row = db()->query(
     "SELECT COUNT(*) AS cnt, COALESCE(MAX(id),0) AS latest
      FROM orders
@@ -25,4 +38,5 @@ echo json_encode([
     'ok'        => true,
     'count'     => (int)$row['cnt'],
     'latest_id' => (int)$row['latest'],
+    'busy'      => false,
 ]);

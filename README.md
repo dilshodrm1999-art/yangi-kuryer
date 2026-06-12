@@ -244,3 +244,22 @@ Kuryer sahifasi soddalashtirildi va telefon ekraniga moslandi. APK ichida WebVie
 - Yangi yordamchilar: `courier_stats()`, `courier_daily_series()`, `courier_earn()`, `load_order_items()`.
 - Umumiy karta: `courier/_card.php` (barcha kuryer sahifalarida bir xil ko'rinish).
 - Hech qanday tashqi grafik kutubxonasi yo'q — grafik sof CSS bilan (webview'da yengil).
+
+
+---
+
+## 🆕 v8 yangiliklari — Yo'l bo'yicha masofa + kuryer bitta zakas qoidasi
+
+### 🚲 Haqiqiy yo'l masofasi (velosiped marshruti)
+- Masofa endi **to'g'ri chiziq** bilan emas, **velosiped yo'l harakatiga ko'ra** (haqiqiy ko'chalar bo'yicha) hisoblanadi.
+- OSRM ochiq xizmati (`routing.openstreetmap.de/routed-bike`) ishlatiladi — **API kalit talab qilmaydi**.
+- Xaritada yo'l chizig'i ko'chalar bo'ylab egri chiziladi (to'g'ri chiziq emas).
+- Mijoz manzilni belgilashi bilan yo'l masofasi va narx jonli yangilanadi.
+- **Zaxira:** internet/xizmat ishlamasa, to'g'ri chiziq × 1.3 koeffitsient bilan taxminlanadi (xatolik bermaydi).
+- Server tomonda ham xuddi shu yo'l masofasi saqlanadi (`route_distance_km()`), shuning uchun mijoz va kuryer bir xil narxni ko'radi.
+- CSP'ga OSRM domeni qo'shildi.
+
+### 🛵 Kuryer bir vaqtda bitta zakas
+- Kuryerda aktiv buyurtma bo'lsa (qabul qilingan / olingan / yo'lda) — unga **yangi buyurtmalar ko'rsatilmaydi** va qabul qila olmaydi.
+- Joriy buyurtmani **"Yetkazdim"** (yoki bekor) qilgach, yangi buyurtmalar avtomatik qaytadi (sahifa o'zi yangilanadi, signal qayta ishlaydi).
+- Bu qoida ham serverda (`accept` da tekshiruv), ham API'da (`busy` flag), ham frontendda qo'llanadi — chetlab o'tib bo'lmaydi.

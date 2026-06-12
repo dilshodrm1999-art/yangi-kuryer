@@ -36,7 +36,7 @@ function security_headers(): void
          . "img-src 'self' data: https:; "
          . "style-src 'self' 'unsafe-inline' https://unpkg.com; "
          . "script-src 'self' 'unsafe-inline' https://unpkg.com; "
-         . "connect-src 'self' https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; "
+         . "connect-src 'self' https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://routing.openstreetmap.de; "
          . "font-src 'self' data:; "
          . "object-src 'none'; "
          . "base-uri 'self'; "
@@ -374,6 +374,44 @@ function haversine_km($lat1, $lng1, $lat2, $lng2): float
        + cos(deg2rad((float)$lat1)) * cos(deg2rad((float)$lat2)) * sin($dLng / 2) ** 2;
     $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
     return round($R * $c, 2);
+}
+
+/**
+ * Velosiped (bike) yo'l harakatiga ko'ra haqiqiy yo'l masofasi (km).
+ * OSRM ochiq xizmatidan foydalanadi (kalit talab qilmaydi).
+ * Server xato bersa yoki internet bo'lmasa — Haversine (to'g'ri chiziq) ga qaytadi.
+ *
+ * Qaytaradi: ['km' => float, 'source' => 'route'|'straight']
+ */
+function route_distance_km($lat1, $lng1, $lat2, $lng2): array
+{
+    $straight = haversine_km($lat1, $lng1, $lat2, $lng2);
+    if ($lat1 === null || $lng1 === null || $lat2 === null || $lng2 === null) {
+        return ['km' => 0.0, 'source' => 'straight'];
+    }
+
+    // OSRM velosiped profili: lon,lat;lon,lat
+    $url = sprintf(
+        'https://routing.openstreetmap.de/routed-bike/route/v1/driving/%F,%F;%F,%F?overview=false',
+        (float)$lng1, (float)$lat1, (float)$lng2, (float)$lat2
+    );
+
+    $json = @file_get_contents($url, false, stream_context_create([
+        'http' => ['timeout' => 4, 'header' => "User-Agent: DostavkaApp/1.0\r\n"],
+    ]));
+
+    if ($json !== false) {
+        $data = json_decode($json, true);
+        if (isset($data['routes'][0]['distance'])) {
+            $km = round((float)$data['routes'][0]['distance'] / 1000, 2);
+            if ($km > 0) {
+                return ['km' => $km, 'source' => 'route'];
+            }
+        }
+    }
+    // Yo'l xizmati ishlamasa — to'g'ri chiziq masofasiga 1.3 koeffitsient
+    // (real yo'l odatda to'g'ri chiziqdan ~30% uzun bo'ladi)
+    return ['km' => round($straight * 1.3, 2), 'source' => 'straight'];
 }
 
 /**

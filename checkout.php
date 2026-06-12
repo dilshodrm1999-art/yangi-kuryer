@@ -29,10 +29,14 @@ $pickupLat = $pickup['lat'] ?? (float)setting('store_lat', 41.311081);
 $pickupLng = $pickup['lng'] ?? (float)setting('store_lng', 69.240562);
 
 // Zona (shahar ichi / tashqarisi) va masofa (do'kondan mijozgacha)
+// Masofa velosiped yo'l harakatiga ko'ra (real yo'l) hisoblanadi.
 $zone = delivery_zone($lat, $lng);
-$distance = ($lat !== null && $lng !== null && $pickupLat !== null && $pickupLng !== null)
-    ? haversine_km($pickupLat, $pickupLng, $lat, $lng)
-    : 0.0;
+if ($lat !== null && $lng !== null && $pickupLat !== null && $pickupLng !== null) {
+    $route    = route_distance_km($pickupLat, $pickupLng, $lat, $lng);
+    $distance = $route['km'];
+} else {
+    $distance = 0.0;
+}
 $fee = delivery_fee($distance, $zone);
 
 $ids  = implode(',', array_map('intval', array_keys($cart)));

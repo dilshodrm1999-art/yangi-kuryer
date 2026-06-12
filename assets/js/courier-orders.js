@@ -1,6 +1,7 @@
 // Kuryer: yangi buyurtmalarni tekshirib, signal (tovush) chaladi
 (function () {
   var lastId = window.__lastOrderId || 0;
+  var wasBusy = window.__courierBusy === true;
   var alertEl = document.getElementById('newOrderAlert');
   var countEl = document.getElementById('availCount');
   var audioCtx = null;
@@ -42,6 +43,13 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.ok) return;
+
+        // Band edi -> bo'shadi: sahifani yangilab yangi buyurtmalarni ko'rsatamiz
+        if (wasBusy && !d.busy) { location.reload(); return; }
+        // Hozir band: signal bermaymiz
+        if (d.busy) { wasBusy = true; return; }
+        wasBusy = false;
+
         if (countEl) countEl.textContent = d.count;
 
         // Yangi (oldingidan katta ID) buyurtma paydo bo'ldi

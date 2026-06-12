@@ -490,3 +490,9 @@ label.check input{width:auto;margin:0}
   .report-grid.two{grid-template-columns:repeat(2,1fr);max-width:520px}
   .cr-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
 }
+
+
+
+/* Kuryer band holati (yangi buyurtma ko'rsatilmaydi) */
+.empty-box.busy{background:#fff7ed;border-color:#fed7aa;color:#b54708}
+.empty-box.busy strong{color:#92400e}

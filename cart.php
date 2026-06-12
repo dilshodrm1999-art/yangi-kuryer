@@ -171,16 +171,12 @@ window.PICKUP = {lat: <?= $pickupLat ?>, lng: <?= $pickupLng ?>, name: <?= json_
 </script>
 <script src="/assets/js/map.js"></script>
 <script>
-// Yetkazib berish haqini jonli hisoblash (do'kon manzili -> mijoz manzili)
+// Yetkazib berish haqini jonli hisoblash (do'kon -> mijoz, VELOSIPED yo'li bo'yicha)
 (function(){
-  var STORE=[window.PICKUP.lat, window.PICKUP.lng];
   var PRICE_IN=<?= (int)$priceIn ?>, PRICE_OUT=<?= (int)$priceOut ?>, MIN_FEE=<?= (int)$minFee ?>;
   var GOODS=<?= (int)$total ?>;
   var POLY=window.CITY_POLYGON||[];
   function fmt(n){return new Intl.NumberFormat('ru-RU').format(Math.round(n))+" so'm";}
-  function hav(a,b,c,d){var R=6371,p=Math.PI/180;
-    var x=Math.sin((c-a)*p/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin((d-b)*p/2)**2;
-    return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
   // Ray-casting: nuqta poligon ichidami?
   function inPoly(lat,lng){
     if(!POLY||POLY.length<3) return true;
@@ -192,8 +188,9 @@ window.PICKUP = {lat: <?= $pickupLat ?>, lng: <?= $pickupLng ?>, name: <?= json_
     }
     return inside;
   }
-  window.onLocationChange=function(lat,lng){
-    var km=hav(STORE[0],STORE[1],lat,lng);
+  // map.js real yo'l masofasini hisoblaganda chaqiradi (km = yo'l masofasi)
+  window.onRouteResult=function(km,lat,lng){
+    if(km===null||isNaN(km)) return;
     var inCity=inPoly(lat,lng);
     var perKm=inCity?PRICE_IN:PRICE_OUT;
     var fee=Math.max(Math.round(km*perKm/100)*100, MIN_FEE);
@@ -202,7 +199,7 @@ window.PICKUP = {lat: <?= $pickupLat ?>, lng: <?= $pickupLng ?>, name: <?= json_
     document.getElementById('feeTxt').textContent=fmt(fee);
     document.getElementById('grandTxt').textContent=fmt(GOODS+fee);
     var hint=document.getElementById('feeHint');
-    if(hint) hint.innerHTML='📍 '+window.PICKUP.name+' → manzil: <strong>'+km.toFixed(1)+' km</strong>, '+zoneTxt+'. 1 km = '+fmt(perKm);
+    if(hint) hint.innerHTML='🚲 '+window.PICKUP.name+' → manzil: <strong>'+km.toFixed(1)+' km</strong> (yo\'l bo\'yicha), '+zoneTxt+'. 1 km = '+fmt(perKm);
   };
 })();
 </script>
