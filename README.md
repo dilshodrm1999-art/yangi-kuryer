@@ -274,3 +274,27 @@ Kuryer sahifasi soddalashtirildi va telefon ekraniga moslandi. APK ichida WebVie
 - Xaritada yo'l chizig'i ustida **masofa + taxminiy vaqt** yorlig'i (🚲 km · ~daq) ko'rsatiladi.
 - Xarita do'kon va manzil ikkalasini ko'rsatadigan qilib avtomatik moslashadi (fit-bounds).
 - Server (`route_distance_km`) va xarita bir xil mantiqdan foydalanadi — narx mos keladi.
+
+
+---
+
+## 🆕 v10 — Kuryer nazorati: bekor so'rovi, GPS majburiy, 20m yetkazish
+
+### 🚫 Kuryer o'zi bekor qila olmaydi (admin tasdig'i kerak)
+- Qabul qilingan buyurtmani kuryer **o'z xohishiga ko'ra bekor qila olmaydi**.
+- "Bekor" tugmasi bosilganda **sabab so'raladi** va **adminga so'rov** boradi (`cancel_requested`).
+- Admin buyurtmalar sahifasida so'rovni ko'radi: **Tasdiqlash** (buyurtma bekor bo'ladi) yoki **Rad etish** (davom etadi).
+- Tasdiqlanmaguncha buyurtma aktiv qoladi.
+
+### 📍 Geolokatsiya majburiy
+- Kuryer GPS'i o'chiq (yoki so'nggi 2 daqiqada yangilanmagan) bo'lsa — **hech qanday amal bajara olmaydi** (qabul, "oldim", "yetkazdim").
+- Server tomonda `courier_gps_fresh()` tekshiruvi + frontendda ogohlantirish banneri.
+
+### ✅ Yetkazishni 20m aniqlikda tasdiqlash
+- Kuryer mijoz manziliga **yetib bormasdan** "Yetkazdim" deya buyurtmani yopa **olmaydi**.
+- Tasdiqlash uchun kuryerning joriy GPS koordinatasi mijoz belgilagan manzilga **20 metr ichida** bo'lishi shart.
+- Tekshiruv ikki bosqichda: frontend (darhol ogohlantiradi) + server (`DELIVERY_RADIUS_M = 20`, qayta tekshiradi — chetlab o'tib bo'lmaydi).
+
+### Texnik
+- `orders` jadvaliga `cancel_requested`, `cancel_reason` ustunlari qo'shildi.
+- Yangi: `courier_gps_fresh()`, `distance_meters()`, `assets/js/courier-actions.js`.

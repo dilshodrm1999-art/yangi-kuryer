@@ -50,6 +50,11 @@ if (!function_exists('courier_card')) {
                 </form>
 
             <?php elseif ($mode === 'active'): ?>
+                <?php if (!empty($o['cancel_requested'])): ?>
+                    <div class="cancel-pending">
+                        <?= icon('clock',15) ?> Bekor qilish so'rovi yuborilgan. Admin tasdig'i kutilmoqda.
+                    </div>
+                <?php endif; ?>
                 <div class="ocard-act">
                     <a class="btn ghost" href="tel:<?= e($o['phone']) ?>"><?= icon('phone',16) ?></a>
                     <?php if ($o['lat'] && $o['lng']): ?>
@@ -59,25 +64,29 @@ if (!function_exists('courier_card')) {
                         </a>
                     <?php endif; ?>
                     <?php if ($o['status'] === 'accepted'): ?>
-                        <form method="post" class="grow"><?= csrf_field() ?>
+                        <form method="post" class="grow js-gps-form"><?= csrf_field() ?>
                             <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>"><input type="hidden" name="status" value="picked_up">
                             <button class="btn primary block"><?= icon('package',16) ?> Oldim</button>
                         </form>
                     <?php elseif ($o['status'] === 'picked_up'): ?>
-                        <form method="post" class="grow"><?= csrf_field() ?>
+                        <form method="post" class="grow js-gps-form"><?= csrf_field() ?>
                             <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>"><input type="hidden" name="status" value="on_way">
                             <button class="btn primary block"><?= icon('truck',16) ?> Yo'ldaman</button>
                         </form>
                     <?php elseif ($o['status'] === 'on_way'): ?>
-                        <form method="post" class="grow"><?= csrf_field() ?>
-                            <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>"><input type="hidden" name="status" value="delivered">
+                        <!-- Yetkazdim: joriy GPS koordinatasi yuboriladi, server 20m ichida ekanini tekshiradi -->
+                        <form method="post" class="grow js-deliver-form"
+                              data-dest-lat="<?= e($o['lat']) ?>" data-dest-lng="<?= e($o['lng']) ?>"><?= csrf_field() ?>
+                            <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
+                            <input type="hidden" name="status" value="delivered">
+                            <input type="hidden" name="cur_lat" class="cur-lat">
+                            <input type="hidden" name="cur_lng" class="cur-lng">
                             <button class="btn success block"><?= icon('check',16) ?> Yetkazdim</button>
                         </form>
                     <?php endif; ?>
-                    <form method="post" data-confirm="Buyurtmani bekor qilasizmi?"><?= csrf_field() ?>
-                        <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>"><input type="hidden" name="status" value="cancelled">
-                        <button class="btn danger-ghost"><?= icon('x',16) ?></button>
-                    </form>
+                    <?php if (empty($o['cancel_requested'])): ?>
+                        <button type="button" class="btn danger-ghost js-cancel-req" data-order="<?= (int)$o['id'] ?>" title="Bekor qilish so'rovi"><?= icon('x',16) ?></button>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
         </article>

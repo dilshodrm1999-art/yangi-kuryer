@@ -168,6 +168,8 @@ CREATE TABLE orders (
     note          TEXT          NULL,
     total         DECIMAL(12,2) NOT NULL DEFAULT 0,
     paid_to_courier TINYINT(1)  NOT NULL DEFAULT 0,
+    cancel_requested TINYINT(1) NOT NULL DEFAULT 0,
+    cancel_reason   VARCHAR(255) NULL,
     created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,

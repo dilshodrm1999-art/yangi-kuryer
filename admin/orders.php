@@ -41,6 +41,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = "Xatolik yuz berdi.";
             }
         }
+    } elseif ($action === 'approve_cancel') {
+        // Kuryerning bekor qilish so'rovini tasdiqlash -> buyurtma bekor bo'ladi
+        db()->prepare("UPDATE orders SET status='cancelled', cancel_requested=0 WHERE id=?")
+            ->execute([$orderId]);
+        $msg = "Buyurtma #$orderId bekor qilindi (kuryer so'rovi tasdiqlandi).";
+    } elseif ($action === 'reject_cancel') {
+        // So'rovni rad etish -> buyurtma davom etadi
+        db()->prepare("UPDATE orders SET cancel_requested=0, cancel_reason=NULL WHERE id=?")
+            ->execute([$orderId]);
+        $msg = "Bekor so'rovi rad etildi. Buyurtma #$orderId davom etadi.";
     }
 }
 
@@ -57,6 +67,9 @@ $orders = $stmt->fetchAll();
 
 $couriers = db()->query("SELECT id, name FROM users WHERE role='courier' AND is_active=1 ORDER BY name")->fetchAll();
 
+// Bekor qilish so'rovlari soni (admin tasdig'i kutilayotgan)
+$pendingCancels = (int)db()->query("SELECT COUNT(*) FROM orders WHERE cancel_requested=1")->fetchColumn();
+
 $itemsByOrder = [];
 if ($orders) {
     $ids = implode(',', array_map(fn($o) => (int)$o['id'], $orders));
@@ -70,6 +83,9 @@ require __DIR__ . '/../includes/header.php';
 ?>
 <h1 class="page-title">Buyurtmalar 📋</h1>
 <?php if ($msg): ?><div class="alert success"><?= icon('check',16) ?><?= e($msg) ?></div><?php endif; ?>
+<?php if ($pendingCancels > 0): ?>
+    <div class="alert error"><?= icon('x',16) ?> <strong><?= $pendingCancels ?> ta</strong> bekor qilish so'rovi admin tasdig'ini kutmoqda.</div>
+<?php endif; ?>
 
 <div class="tabs">
     <?php
@@ -90,6 +106,26 @@ require __DIR__ . '/../includes/header.php';
             <strong>#<?= $o['id'] ?> · <?= e($o['customer_name']) ?></strong>
             <span class="status" style="background:<?= status_color($o['status']) ?>"><?= e(status_label($o['status'])) ?></span>
         </div>
+        <?php if (!empty($o['cancel_requested'])): ?>
+            <div class="cancel-req-box">
+                <div class="crb-head"><?= icon('x',15) ?> <strong>Kuryer bekor qilishni so'radi</strong></div>
+                <?php if (!empty($o['cancel_reason'])): ?><p class="crb-reason">Sabab: <?= e($o['cancel_reason']) ?></p><?php endif; ?>
+                <div class="crb-actions">
+                    <form method="post" data-confirm="Buyurtma bekor qilinsinmi?">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="approve_cancel">
+                        <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
+                        <button class="btn danger sm"><?= icon('check',14) ?> Tasdiqlash (bekor qilish)</button>
+                    </form>
+                    <form method="post">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="reject_cancel">
+                        <input type="hidden" name="order_id" value="<?= $o['id'] ?>">
+                        <button class="btn ghost sm"><?= icon('x',14) ?> Rad etish</button>
+                    </form>
+                </div>
+            </div>
+        <?php endif; ?>
         <div class="order-line"><?= icon('pin',16) ?><span><?= e($o['address']) ?></span></div>
         <div class="order-line"><?= icon('phone',16) ?><span><?= e($o['phone']) ?></span></div>
         <?php if ($o['lat'] && $o['lng']): ?>

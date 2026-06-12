@@ -10,6 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action  = $_POST['action'] ?? '';
     $pdo = db();
 
+    // GPS majburiy: kuryer joylashuvi yangilanmagan bo'lsa hech qanday amal bajarilmaydi
+    if (!courier_gps_fresh($me)) {
+        $_SESSION['flash_err'] = "Geolokatsiya o'chiq. Tizimda ishlash uchun GPS'ni yoqing.";
+        redirect('/courier/index.php');
+    }
+
     if ($action === 'accept') {
         // Kuryer band bo'lsa (aktiv buyurtmasi bo'lsa) yangi qabul qila olmaydi
         $busy = $pdo->prepare(
@@ -33,8 +39,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/courier/index.php');
     }
 
+    // Bekor qilish so'rovi: kuryer o'zi bekor qila olmaydi — admin tasdiqlashi kerak
+    if ($action === 'cancel_request') {
+        $reason = trim($_POST['reason'] ?? '');
+        $stmt = $pdo->prepare(
+            "UPDATE orders SET cancel_requested = 1, cancel_reason = ?
+             WHERE id = ? AND courier_id = ? AND status IN ('accepted','picked_up','on_way')"
+        );
+        $stmt->execute([$reason !== '' ? $reason : 'Sabab ko\'rsatilmagan', $orderId, $me['id']]);
+        $_SESSION['flash'] = $stmt->rowCount()
+            ? "Bekor qilish so'rovi adminga yuborildi. Admin tasdiqlagach buyurtma bekor bo'ladi."
+            : 'So\'rov yuborilmadi.';
+        redirect('/courier/index.php');
+    }
+
+    // Holatni o'zgartirish (kuryer endi cancelled qila olmaydi)
     $status  = $_POST['status'] ?? '';
-    $allowed = ['picked_up', 'on_way', 'delivered', 'cancelled'];
+    $allowed = ['picked_up', 'on_way', 'delivered'];
     if (in_array($status, $allowed, true)) {
         $pdo->beginTransaction();
         try {
@@ -42,6 +63,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$orderId, $me['id']]);
             $order = $stmt->fetch();
             if ($order) {
+                // "Yetkazdim" faqat mijoz manziliga 20m yaqinlikda tasdiqlanadi
+                if ($status === 'delivered') {
+                    $cLat = isset($_POST['cur_lat']) ? (float)$_POST['cur_lat'] : null;
+                    $cLng = isset($_POST['cur_lng']) ? (float)$_POST['cur_lng'] : null;
+                    if ($cLat === null || $cLng === null || $order['lat'] === null || $order['lng'] === null) {
+                        $pdo->rollBack();
+                        $_SESSION['flash_err'] = "Joylashuv aniqlanmadi. GPS yoqilganini tekshiring.";
+                        redirect('/courier/index.php');
+                    }
+                    $dist = distance_meters($cLat, $cLng, $order['lat'], $order['lng']);
+                    if ($dist > DELIVERY_RADIUS_M) {
+                        $pdo->rollBack();
+                        $_SESSION['flash_err'] = "Siz mijoz manzilidan " . round($dist) . " m uzoqdasiz. "
+                            . "Yetkazishni tasdiqlash uchun manzilga " . DELIVERY_RADIUS_M . " m yaqinlashing.";
+                        redirect('/courier/index.php');
+                    }
+                }
                 $pdo->prepare('UPDATE orders SET status=? WHERE id=?')->execute([$status, $orderId]);
                 if ($status === 'delivered') {
                     settle_delivery($pdo, $order);
@@ -90,7 +128,11 @@ $today->execute([$me['id']]);
 $t = $today->fetch();
 
 $flash = $_SESSION['flash'] ?? '';
-unset($_SESSION['flash']);
+$flashErr = $_SESSION['flash_err'] ?? '';
+unset($_SESSION['flash'], $_SESSION['flash_err']);
+
+// GPS holati (server tomonda oxirgi yangilanish)
+$gpsFresh = courier_gps_fresh($me);
 
 $pageTitle = 'Kuryer';
 require __DIR__ . '/../includes/header.php';
@@ -104,7 +146,7 @@ require __DIR__ . '/_card.php';
             <span class="muted small">Assalomu alaykum,</span>
             <strong><?= e($me['name']) ?></strong>
         </div>
-        <span id="gpsBadge" class="gps-chip off">GPS...</span>
+        <span id="gpsBadge" class="gps-chip <?= $gpsFresh ? 'on' : 'off' ?>"><?= $gpsFresh ? 'GPS yoqilgan' : 'GPS...' ?></span>
     </div>
     <div class="cr-hero-stats">
         <div><span class="v"><?= (int)$t['cnt'] ?></span><span class="l">Bugun yetkazildi</span></div>
@@ -113,6 +155,12 @@ require __DIR__ . '/_card.php';
     </div>
 </section>
 
+<!-- GPS majburiy ogohlantirishi (geolokatsiya o'chiq bo'lsa) -->
+<div id="gpsRequired" class="alert error" style="<?= $gpsFresh ? 'display:none' : '' ?>">
+    <?= icon('nav',16) ?> <strong>Geolokatsiya o'chiq.</strong> Tizimda ishlash uchun GPS'ni yoqing — aks holda buyurtma qabul qilish va yetkazishni tasdiqlab bo'lmaydi.
+</div>
+
+<?php if ($flashErr): ?><div class="alert error"><?= icon('x',16) ?> <?= e($flashErr) ?></div><?php endif; ?>
 <?php if ($flash): ?><div class="alert info"><?= icon('check',16) ?> <?= e($flash) ?></div><?php endif; ?>
 
 <!-- Yangi buyurtma signali -->
@@ -160,7 +208,18 @@ require __DIR__ . '/_card.php';
 <script>
 window.__lastOrderId = <?= $available ? max(array_map(fn($o)=>(int)$o['id'],$available)) : 0 ?>;
 window.__courierBusy = <?= $isBusy ? 'true' : 'false' ?>;
+window.__deliveryRadius = <?= DELIVERY_RADIUS_M ?>;
 </script>
+
+<!-- Bekor qilish so'rovi (yashirin forma) -->
+<form method="post" id="cancelForm" style="display:none">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="cancel_request">
+    <input type="hidden" name="order_id" id="cancelOrderId">
+    <input type="hidden" name="reason" id="cancelReason">
+</form>
+
 <script src="/assets/js/courier-track.js"></script>
+<script src="/assets/js/courier-actions.js"></script>
 <script src="/assets/js/courier-orders.js"></script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

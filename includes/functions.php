@@ -331,6 +331,26 @@ function status_color(string $s): string
     ][$s] ?? '#6b7280';
 }
 
+/* ---------- Kuryer: GPS va yetkazib berish nazorati ---------- */
+
+/** Yetkazib berishni tasdiqlash uchun ruxsat etilgan masofa (metr) */
+const DELIVERY_RADIUS_M = 20;
+
+/** Kuryer GPS'i "yangi" (so'nggi N soniyada yangilangan) deb hisoblanadimi? */
+function courier_gps_fresh(?array $courier, int $maxAgeSec = 120): bool
+{
+    if (!$courier || empty($courier['lat']) || empty($courier['lng']) || empty($courier['last_seen'])) {
+        return false;
+    }
+    return (time() - strtotime($courier['last_seen'])) <= $maxAgeSec;
+}
+
+/** Ikki nuqta orasidagi masofa METRDA (yetkazishni tasdiqlash uchun) */
+function distance_meters($lat1, $lng1, $lat2, $lng2): float
+{
+    return haversine_km($lat1, $lng1, $lat2, $lng2) * 1000;
+}
+
 /* ---------- Sozlamalar (settings) ---------- */
 
 function settings(): array
