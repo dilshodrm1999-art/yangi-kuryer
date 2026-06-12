@@ -16,8 +16,8 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (badge) {
-          badge.textContent = '🟢 GPS yoqilgan';
-          badge.className = 'tag fee';
+          badge.textContent = 'GPS yoqilgan';
+          badge.className = 'gps-chip on';
         }
       }).catch(function () {});
   }
@@ -26,6 +26,6 @@
   navigator.geolocation.watchPosition(function (pos) {
     send(pos.coords.latitude, pos.coords.longitude);
   }, function () {
-    if (badge) { badge.textContent = '🔴 GPS o\'chiq'; badge.className = 'tag'; }
+    if (badge) { badge.textContent = "GPS o'chiq"; badge.className = 'gps-chip off'; }
   }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
 })();

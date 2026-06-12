@@ -18,9 +18,10 @@ if ($u) {
         ];
     } elseif ($u['role'] === 'courier') {
         $navItems = [
-            ['/courier/index.php',   'truck',  'Buyurtma'],
-            ['/courier/balance.php', 'wallet', 'Balans'],
-            ['/profile.php',         'user',   'Profil'],
+            ['/courier/index.php',   'truck',   'Buyurtma'],
+            ['/courier/history.php', 'history', 'Tarix'],
+            ['/courier/stats.php',   'chart',   'Hisobot'],
+            ['/courier/balance.php', 'wallet',  'Balans'],
         ];
     } elseif ($u['role'] === 'store') {
         $navItems = [

@@ -208,3 +208,39 @@ Endi yetkazib berish narxi **umumiy ombordan emas, balki aniq do'kon manzilidan*
 - `resolve_pickup()` — savatdagi mahsulot do'koniga qarab olish nuqtasini aniqlaydi (do'kon koordinatasi bo'lmasa umumiy omborga qaytadi).
 - `orders` jadvaliga `pickup_name`, `pickup_address` ustunlari qo'shildi.
 - Masofa har doim **olish nuqtasidan** (do'kon yoki ombor) hisoblanadi — mijozga ham, kuryerga ham bir xil narx ko'rinadi.
+
+
+---
+
+## 🆕 v7 yangiliklari — Kuryer paneli qayta ishlandi (mobil / APK webview)
+
+Kuryer sahifasi soddalashtirildi va telefon ekraniga moslandi. APK ichida WebView orqali ochishga tayyor.
+
+### 📱 Mobilga moslik
+- Yagona ustunli, katta tugmali, kam yozuvli ixcham dizayn.
+- Pastki navigatsiya (bottom-nav) telefon uchun qulay: **Buyurtma · Tarix · Hisobot · Balans**.
+- `env(safe-area-inset-bottom)` — telefon pastki "notch"iga moslashadi.
+
+### 🚚 Buyurtma sahifasi (`courier/index.php`)
+- Yuqorida: salom + **bugungi natija** (yetkazilgan soni, daromad, balans) + **GPS holati**.
+- Faqat **aktiv** va **yangi** buyurtmalar ko'rsatiladi (tarix alohida bo'limga ko'chdi).
+- Har karta: do'kon → manzil marshruti, masofa, mahsulot soni, zona va **sof daromad**.
+- Tugmalar: Qabul → Oldim → Yo'ldaman → Yetkazdim; tezkor **Qo'ng'iroq** va **Yo'l ko'rsatish**.
+- Yangi buyurtma kelganda **signal (tovush + tebranish)** saqlanib qoldi.
+
+### 🕘 Buyurtma tarixi (`courier/history.php`) — alohida bo'lim
+- Sana bo'yicha guruhlangan (Bugun / Kecha / sana).
+- Filtr: Hammasi · Yetkazilgan · Bekor qilingan.
+
+### 📊 Statistika / hisobot (`courier/stats.php`)
+- Davr kartalari: **Bugun · Bu hafta · Bu oy · Umumiy** daromad.
+- **So'nggi 7 kun** daromadi ustunli grafikda.
+- Ko'rsatkichlar: jami yetkazilgan, bosib o'tilgan masofa, o'rtacha daromad/buyurtma, balans.
+
+### 💰 Balans (`courier/balance.php`)
+- Joriy balans + bugun/bu oy; ixcham daromad tarixi (kartalar ko'rinishida).
+
+### Texnik
+- Yangi yordamchilar: `courier_stats()`, `courier_daily_series()`, `courier_earn()`, `load_order_items()`.
+- Umumiy karta: `courier/_card.php` (barcha kuryer sahifalarida bir xil ko'rinish).
+- Hech qanday tashqi grafik kutubxonasi yo'q — grafik sof CSS bilan (webview'da yengil).

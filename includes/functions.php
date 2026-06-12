@@ -612,9 +612,101 @@ function icon(string $name, int $size = 22): string
         'image'    => '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
         'layers'   => '<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
         'palette'  => '<path d="M12 3a9 9 0 1 0 0 18 2 2 0 0 0 2-2 2 2 0 0 1 2-2h1a4 4 0 0 0 4-4 9 9 0 0 0-9-8Z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/>',
+        'chart'    => '<path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="12" y="7" width="3" height="10"/><rect x="17" y="13" width="3" height="4"/>',
+        'history'  => '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 8v4l3 2"/>',
+        'calendar' => '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/>',
+        'trophy'   => '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/>',
+        'flame'    => '<path d="M12 2s4 4 4 9a4 4 0 0 1-8 0c0-1 .5-2 .5-2S6 11 6 14a6 6 0 0 0 12 0c0-5-6-12-6-12Z"/>',
+        'phone-call'=> '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/>',
     ];
     $p = $paths[$name] ?? $paths['box'];
     return '<svg class="ic" width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" '
          . 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
          . 'stroke-linejoin="round" aria-hidden="true">' . $p . '</svg>';
+}
+
+/* ============================================================
+ *  KURYER yordamchilari (panel, tarix, hisobot uchun umumiy)
+ * ============================================================ */
+
+/**
+ * Kuryer uchun buyurtmalar ro'yxati elementlarini (order_items) bittada olish.
+ * $orders - orders satrlari; qaytaradi: [order_id => [items...]]
+ */
+function load_order_items(array $orders): array
+{
+    $byOrder = [];
+    $ids = array_values(array_filter(array_map(fn($o) => (int)$o['id'], $orders)));
+    if (!$ids) {
+        return $byOrder;
+    }
+    $in = implode(',', $ids);
+    foreach (db()->query("SELECT * FROM order_items WHERE order_id IN ($in)")->fetchAll() as $r) {
+        $byOrder[$r['order_id']][] = $r;
+    }
+    return $byOrder;
+}
+
+/** Kuryerning bitta yetkazilgan buyurtmadan sof daromadi (komissiyasiz) */
+function courier_earn(array $order): float
+{
+    return max(0, (float)$order['delivery_fee'] - (float)($order['commission'] ?? 0));
+}
+
+/**
+ * Kuryer statistikasi (umumiy + bugun + hafta + oy).
+ * Qaytaradi: assoc massiv (delivered, today_*, week_*, month_*, total_*, avg_*).
+ */
+function courier_stats(int $courierId): array
+{
+    $stmt = db()->prepare(
+        "SELECT
+            COUNT(*) AS delivered,
+            COALESCE(SUM(delivery_fee - commission),0) AS total_earn,
+            COALESCE(SUM(distance_km),0) AS total_km,
+            COALESCE(SUM(CASE WHEN DATE(updated_at)=CURDATE() THEN 1 ELSE 0 END),0) AS today_cnt,
+            COALESCE(SUM(CASE WHEN DATE(updated_at)=CURDATE() THEN delivery_fee - commission ELSE 0 END),0) AS today_earn,
+            COALESCE(SUM(CASE WHEN YEARWEEK(updated_at,1)=YEARWEEK(CURDATE(),1) THEN 1 ELSE 0 END),0) AS week_cnt,
+            COALESCE(SUM(CASE WHEN YEARWEEK(updated_at,1)=YEARWEEK(CURDATE(),1) THEN delivery_fee - commission ELSE 0 END),0) AS week_earn,
+            COALESCE(SUM(CASE WHEN YEAR(updated_at)=YEAR(CURDATE()) AND MONTH(updated_at)=MONTH(CURDATE()) THEN 1 ELSE 0 END),0) AS month_cnt,
+            COALESCE(SUM(CASE WHEN YEAR(updated_at)=YEAR(CURDATE()) AND MONTH(updated_at)=MONTH(CURDATE()) THEN delivery_fee - commission ELSE 0 END),0) AS month_earn
+         FROM orders WHERE courier_id=? AND status='delivered'"
+    );
+    $stmt->execute([$courierId]);
+    $s = $stmt->fetch() ?: [];
+    $s['avg_earn'] = ((int)($s['delivered'] ?? 0) > 0)
+        ? (float)$s['total_earn'] / (int)$s['delivered'] : 0;
+    return $s;
+}
+
+/**
+ * Oxirgi 7 kun bo'yicha kunlik daromad va buyurtmalar (grafik uchun).
+ * Qaytaradi: [['label'=>'Du','date'=>'2026-06-08','count'=>3,'earn'=>45000], ...]
+ */
+function courier_daily_series(int $courierId, int $days = 7): array
+{
+    $stmt = db()->prepare(
+        "SELECT DATE(updated_at) AS d, COUNT(*) AS cnt, COALESCE(SUM(delivery_fee - commission),0) AS earn
+         FROM orders
+         WHERE courier_id=? AND status='delivered' AND updated_at >= (CURDATE() - INTERVAL ? DAY)
+         GROUP BY DATE(updated_at)"
+    );
+    $stmt->execute([$courierId, $days - 1]);
+    $map = [];
+    foreach ($stmt->fetchAll() as $r) {
+        $map[$r['d']] = ['count' => (int)$r['cnt'], 'earn' => (float)$r['earn']];
+    }
+    $dow = ['Yak','Du','Se','Cho','Pa','Ju','Sha']; // 0=yak ... 6=sha (date('w'))
+    $out = [];
+    for ($i = $days - 1; $i >= 0; $i--) {
+        $ts = strtotime("-$i day");
+        $key = date('Y-m-d', $ts);
+        $out[] = [
+            'label' => $dow[(int)date('w', $ts)],
+            'date'  => $key,
+            'count' => $map[$key]['count'] ?? 0,
+            'earn'  => $map[$key]['earn'] ?? 0,
+        ];
+    }
+    return $out;
 }
