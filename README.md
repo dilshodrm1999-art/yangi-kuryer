@@ -345,3 +345,30 @@ Kuryer sahifasi soddalashtirildi va telefon ekraniga moslandi. APK ichida WebVie
 
 ### Baza
 - `orders.cashback_used` ustuni qo'shildi. Mavjud baza uchun: `mysql -u root -p BAZA < sql/update.sql`.
+
+---
+
+## 🆕 v13 — Rasm yuklash, xaritada kuryer ID, va RATSIYA (ovozli aloqa)
+
+### 📷 Local rasm yuklash (URL o'rniga)
+- Endi rasm qo'shiladigan barcha joylarda **kompyuter/telefondan to'g'ridan-to'g'ri fayl yuklash** mumkin (URL ham qoldirildi, ixtiyoriy):
+  - Admin → kuryer **rasmi** va **pasport rasmi**.
+  - Admin → do'kon **logo / banner / asosiy rasm**; mahsulot rasmi.
+  - Do'kon egasi → do'kon brendingi va mahsulot rasmlari.
+- Yuklangan rasm jonli ko'rinadi (preview). Fayllar `/uploads/` da saqlanadi (PHP ishga tushirish o'chirilgan, faqat rasm/audio).
+- Xavfsizlik: haqiqiy MIME tekshiruvi, 5 MB limit, tasodifiy nom.
+
+### 🗺️ Xaritada kuryer ID + ism
+- Admin jonli xaritada kuryer **iconi o'rniga qisqa ID va ismi** ko'rinadi (masalan `K001 · Akmal`).
+- Band kuryer yashil, bo'sh kuryer ko'k yorliq bilan ajraladi.
+
+### 🎙️ Ratsiya (ovozli xabar) — yangi funksiya
+- **Admin → kuryer:** xaritada kuryerni bosib, "Ovozli xabar" tugmasini **bosib turib** gapiradi — kuryerga yetib boradi va avtomatik chalinadi.
+- **Kuryer → admin:** kuryer panelidagi **mikrofon tugmasini bosib** gapiradi — barcha adminlarga yetadi.
+- MediaRecorder + 5 soniyalik polling; tashqi xizmatsiz, o'zimizning serverda.
+- Ovoz fayllari `/uploads/voice/` da; `voice_messages` jadvali orqali boshqariladi.
+
+### Baza
+- `users.photo`, `users.passport` ustunlari; `voice_messages` jadvali.
+- Mavjud baza uchun: `mysql -u root -p BAZA < sql/update.sql` (ma'lumotni o'chirmaydi).
+- Hosting: `uploads/` papkasiga yozish ruxsati (0775) bo'lsin.

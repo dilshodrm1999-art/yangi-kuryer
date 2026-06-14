@@ -15,8 +15,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $discount  = max(0, min(100, (float)($_POST['discount_percent'] ?? 0)));
         $catId     = (int)($_POST['category_id'] ?? 0) ?: null;
         $storeId   = (int)($_POST['store_id'] ?? 0) ?: null;
-        $image     = trim($_POST['image'] ?? '');
         $available = isset($_POST['is_available']) ? 1 : 0;
+
+        // Rasm: local fayl yoki URL
+        $curImg = '';
+        if ($id) {
+            $g = db()->prepare('SELECT image FROM products WHERE id=?');
+            $g->execute([$id]); $curImg = (string)($g->fetchColumn() ?: '');
+        }
+        $upErr = null;
+        $image = resolve_image_input('image_file', 'image', 'products', $curImg, $upErr);
+        if ($upErr) $msg = 'Rasm: ' . $upErr;
 
         if ($name !== '') {
             if ($id) {
@@ -68,7 +77,7 @@ require __DIR__ . '/../includes/header.php';
 <div class="admin-layout">
     <div class="card form-card">
         <h2><?= $edit ? icon('edit',18).' Tahrirlash' : icon('plus',18).' Yangi mahsulot' ?></h2>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="save">
             <input type="hidden" name="id" value="<?= $edit['id'] ?? 0 ?>">
@@ -92,7 +101,12 @@ require __DIR__ . '/../includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </label>
-            <label class="field"><span>Rasm URL</span><input type="text" name="image" value="<?= e($edit['image'] ?? '') ?>" placeholder="https://..."></label>
+            <div class="upload-field">
+                <span class="upload-label"><?= icon('image',15) ?> Mahsulot rasmi</span>
+                <div class="img-preview <?= !empty($edit['image']) ? 'has' : '' ?>" id="prevProd" style="<?= !empty($edit['image']) ? "background-image:url('".e($edit['image'])."')" : '' ?>"></div>
+                <input type="file" name="image_file" accept="image/*" class="js-file" data-preview="prevProd">
+                <input type="text" name="image" value="<?= e($edit['image'] ?? '') ?>" placeholder="yoki rasm URL">
+            </div>
             <label class="check"><input type="checkbox" name="is_available" <?= ($edit['is_available'] ?? 1) ? 'checked' : '' ?>> Sotuvda mavjud</label>
             <button class="btn primary block" style="margin-top:12px"><?= $edit ? 'Saqlash' : 'Qo\'shish' ?></button>
             <?php if ($edit): ?><a class="btn ghost block" href="/admin/products.php">Bekor qilish</a><?php endif; ?>
@@ -141,4 +155,5 @@ require __DIR__ . '/../includes/header.php';
         </table>
     </div>
 </div>
+<script src="/assets/js/admin-uploads.js"></script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

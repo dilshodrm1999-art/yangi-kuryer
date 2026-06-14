@@ -163,6 +163,16 @@ require __DIR__ . '/_card.php';
 <?php if ($flashErr): ?><div class="alert error"><?= icon('x',16) ?> <?= e($flashErr) ?></div><?php endif; ?>
 <?php if ($flash): ?><div class="alert info"><?= icon('check',16) ?> <?= e($flash) ?></div><?php endif; ?>
 
+<!-- Ratsiya: admin bilan ovozli aloqa -->
+<div class="ratsiya-card">
+    <h2><?= icon('mic',18) ?> Ratsiya (admin bilan aloqa)</h2>
+    <div class="ptt-wrap">
+        <button type="button" class="ptt-btn" id="courierPtt" title="Bosib turing va gapiring"><?= icon('mic',34) ?></button>
+        <span class="ptt-hint">Bosib turing va gapiring — admin eshitadi</span>
+        <span class="ptt-status" id="courierPttStatus"></span>
+    </div>
+</div>
+
 <!-- Yangi buyurtma signali -->
 <div id="newOrderAlert" class="new-order-alert" style="display:none">
     🔔 <strong>Yangi buyurtma!</strong>
@@ -222,4 +232,5 @@ window.__deliveryRadius = <?= DELIVERY_RADIUS_M ?>;
 <script src="/assets/js/courier-track.js"></script>
 <script src="/assets/js/courier-actions.js"></script>
 <script src="/assets/js/courier-orders.js"></script>
+<script src="/assets/js/ratsiya.js"></script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

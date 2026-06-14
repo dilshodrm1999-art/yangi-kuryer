@@ -25,6 +25,7 @@ $rows = db()->query(
 
 $couriers = array_map(fn($r) => [
     'id'            => (int)$r['id'],
+    'short_id'      => 'K' . str_pad((string)$r['id'], 3, '0', STR_PAD_LEFT),
     'name'          => $r['name'],
     'phone'         => $r['phone'],
     'lat'           => (float)$r['lat'],

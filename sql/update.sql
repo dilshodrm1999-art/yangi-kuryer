@@ -46,6 +46,20 @@ ALTER TABLE users
 -- users — keshbek balansi (mijoz uchun)
 CALL add_col_if_missing('users','cashback_balance', "cashback_balance DECIMAL(12,2) NOT NULL DEFAULT 0");
 
+-- users — kuryer rasmi va pasport rasmi
+CALL add_col_if_missing('users','photo',    "photo VARCHAR(255) NULL");
+CALL add_col_if_missing('users','passport', "passport VARCHAR(255) NULL");
+
+-- ovozli xabarlar (ratsiya) jadvali
+CREATE TABLE IF NOT EXISTS voice_messages (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id   INT NOT NULL,
+    receiver_id INT NULL,
+    audio       VARCHAR(255) NOT NULL,
+    is_read     TINYINT(1)   NOT NULL DEFAULT 0,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ============================================================
 --  2) stores jadvali (do'konlar/fastfudlar) — bo'lmasa yaratiladi
 -- ============================================================

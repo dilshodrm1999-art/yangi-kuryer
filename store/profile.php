@@ -9,9 +9,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     check_csrf();
     $name     = trim($_POST['name'] ?? '');
     $desc     = trim($_POST['description'] ?? '');
-    $logo     = trim($_POST['logo'] ?? '');
-    $cover    = trim($_POST['cover'] ?? '');
-    $image    = trim($_POST['image'] ?? '');
     $theme    = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['theme_color'] ?? '') ? $_POST['theme_color'] : '#ff6b35';
     $address  = trim($_POST['address'] ?? '');
     $phone    = trim($_POST['phone'] ?? '');
@@ -22,6 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $active   = isset($_POST['is_active']) ? 1 : 0;
     $days = array_filter(array_map('intval', (array)($_POST['work_days'] ?? [])), fn($d) => $d >= 1 && $d <= 7);
     $workDays = $days ? implode(',', $days) : '1,2,3,4,5,6,7';
+
+    // Rasmlar: local fayl yoki URL (eski qiymat saqlanadi)
+    $upErr = null;
+    $logo  = resolve_image_input('logo_file',  'logo',  'stores', $store['logo'] ?? '', $upErr);
+    $cover = resolve_image_input('cover_file', 'cover', 'stores', $store['cover'] ?? '', $upErr);
+    $image = resolve_image_input('image_file', 'image', 'stores', $store['image'] ?? '', $upErr);
 
     if ($name === '') {
         $msg = 'Do\'kon nomini kiriting.';
@@ -55,7 +58,7 @@ require __DIR__ . '/../includes/header.php';
 <?php if (isset($_GET['saved'])): ?><div class="alert success"><?= icon('check',16) ?> Saqlandi.</div><?php endif; ?>
 <?php if ($msg): ?><div class="alert error"><?= icon('x',16) ?><?= e($msg) ?></div><?php endif; ?>
 
-<form method="post">
+<form method="post" enctype="multipart/form-data">
     <?= csrf_field() ?>
     <div class="admin-layout">
         <div class="card form-card">
@@ -70,9 +73,25 @@ require __DIR__ . '/../includes/header.php';
 
             <label class="field"><span>Do'kon nomi</span><input type="text" name="name" value="<?= e($store['name']) ?>" required></label>
             <label class="field"><span>Tavsif</span><textarea name="description" rows="2"><?= e($store['description'] ?? '') ?></textarea></label>
-            <label class="field"><span><?= icon('image',14) ?> Logotip URL</span><input type="text" name="logo" value="<?= e($store['logo'] ?? '') ?>" placeholder="https://... (logo)"></label>
-            <label class="field"><span><?= icon('image',14) ?> Sarlavha (banner) rasmi URL</span><input type="text" name="cover" value="<?= e($store['cover'] ?? '') ?>" placeholder="https://... (banner)"></label>
-            <label class="field"><span>Asosiy rasm URL</span><input type="text" name="image" value="<?= e($store['image'] ?? '') ?>" placeholder="https://..."></label>
+
+            <div class="upload-field">
+                <span class="upload-label"><?= icon('image',15) ?> Logotip</span>
+                <div class="img-preview <?= !empty($store['logo']) ? 'has' : '' ?>" id="prevLogo" style="<?= !empty($store['logo']) ? "background-image:url('".e($store['logo'])."')" : '' ?>"></div>
+                <input type="file" name="logo_file" accept="image/*" class="js-file" data-preview="prevLogo">
+                <input type="text" name="logo" value="<?= e($store['logo'] ?? '') ?>" placeholder="yoki logo URL">
+            </div>
+            <div class="upload-field">
+                <span class="upload-label"><?= icon('image',15) ?> Sarlavha (banner)</span>
+                <div class="img-preview wide <?= !empty($store['cover']) ? 'has' : '' ?>" id="prevCover" style="<?= !empty($store['cover']) ? "background-image:url('".e($store['cover'])."')" : '' ?>"></div>
+                <input type="file" name="cover_file" accept="image/*" class="js-file" data-preview="prevCover">
+                <input type="text" name="cover" value="<?= e($store['cover'] ?? '') ?>" placeholder="yoki banner URL">
+            </div>
+            <div class="upload-field">
+                <span class="upload-label"><?= icon('image',15) ?> Asosiy rasm</span>
+                <div class="img-preview <?= !empty($store['image']) ? 'has' : '' ?>" id="prevImg" style="<?= !empty($store['image']) ? "background-image:url('".e($store['image'])."')" : '' ?>"></div>
+                <input type="file" name="image_file" accept="image/*" class="js-file" data-preview="prevImg">
+                <input type="text" name="image" value="<?= e($store['image'] ?? '') ?>" placeholder="yoki rasm URL">
+            </div>
             <label class="field"><span>Asosiy rang (theme)</span><input type="color" name="theme_color" value="<?= e($store['theme_color'] ?: '#ff6b35') ?>" style="height:44px;padding:4px"></label>
 
             <h2 style="margin-top:18px"><?= icon('clock',18) ?> Ish vaqti</h2>
@@ -129,4 +148,5 @@ require __DIR__ . '/../includes/header.php';
   setTimeout(function(){map.invalidateSize();},300);
 })();
 </script>
+<script src="/assets/js/admin-uploads.js"></script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

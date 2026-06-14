@@ -13,3 +13,9 @@ Thumbs.db
 # IDE
 .idea/
 .vscode/
+
+
+# Yuklangan fayllar (rasm/ovoz) — papka tuzilmasi saqlanadi, fayllar emas
+uploads/**/*
+!uploads/**/.gitkeep
+!uploads/.htaccess

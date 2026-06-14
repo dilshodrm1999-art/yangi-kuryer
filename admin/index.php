@@ -46,8 +46,23 @@ require __DIR__ . '/../includes/header.php';
 </div>
 
 <h2 class="sub"><?= icon('pin',18) ?> Kuryerlar jonli xaritada (<span id="liveCount">0</span>)</h2>
-<div id="admin-map" class="live-map" style="height:340px"></div>
-<p class="muted small" style="margin-top:8px">Xarita har 5 soniyada yangilanadi. Faqat GPS yoqilgan kuryerlar ko'rinadi.</p>
+<?php
+  $mLat = (float)setting('map_lat', 41.311081);
+  $mLng = (float)setting('map_lng', 69.240562);
+  $mZoom = (int)setting('map_zoom', 12);
+?>
+<div id="admin-map" class="live-map" style="height:340px"
+     data-lat="<?= $mLat ?>" data-lng="<?= $mLng ?>" data-zoom="<?= $mZoom ?>"></div>
+<p class="muted small" style="margin-top:8px">Xarita har 5 soniyada yangilanadi. Kuryer ustiga bosib ovozli xabar (ratsiya) yuborishingiz mumkin.</p>
+
+<!-- Ratsiya: ovozli xabar yuborish -->
+<div class="voice-panel">
+    <span><?= icon('mic',16) ?> Ratsiya:</span>
+    <span class="sel-courier" id="selCourier">Xaritadan kuryer tanlang</span>
+    <button type="button" class="ptt-btn" id="adminPtt" style="width:52px;height:52px" disabled title="Bosib turing va gapiring"><?= icon('mic',22) ?></button>
+    <span class="ptt-status" id="adminPttStatus"></span>
+</div>
+<div class="voice-inbox" id="voiceInbox"></div>
 
 <h2 class="sub"><?= icon('clock',18) ?> So'nggi buyurtmalar</h2>
 <div class="table-wrap">
@@ -72,4 +87,5 @@ require __DIR__ . '/../includes/header.php';
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/assets/js/admin-map.js"></script>
+<script src="/assets/js/ratsiya.js"></script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

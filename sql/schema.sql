@@ -52,6 +52,8 @@ CREATE TABLE users (
     is_active     TINYINT(1)    NOT NULL DEFAULT 1,
     balance       DECIMAL(12,2) NOT NULL DEFAULT 0,
     cashback_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
+    photo         VARCHAR(255)  NULL,
+    passport      VARCHAR(255)  NULL,
     lat           DECIMAL(10,7) NULL,
     lng           DECIMAL(10,7) NULL,
     last_seen     TIMESTAMP     NULL,
@@ -193,6 +195,24 @@ CREATE TABLE order_items (
     quantity    INT           NOT NULL DEFAULT 1,
     FOREIGN KEY (order_id)   REFERENCES orders(id)   ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Ovozli xabarlar (ratsiya) — admin <-> kuryer
+--   sender_id    - kim yubordi
+--   receiver_id  - kimga (NULL bo'lsa: kuryerdan -> barcha adminlarga)
+--   audio        - /uploads/voice/... yo'li
+--   is_read      - qabul qiluvchi eshitdimi
+-- ------------------------------------------------------------
+CREATE TABLE voice_messages (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id   INT NOT NULL,
+    receiver_id INT NULL,
+    audio       VARCHAR(255) NOT NULL,
+    is_read     TINYINT(1)   NOT NULL DEFAULT 0,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id)   REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================

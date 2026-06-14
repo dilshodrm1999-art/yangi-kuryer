@@ -25,7 +25,7 @@ function security_headers(): void
     // Referrer siyosati
     header('Referrer-Policy: strict-origin-when-cross-origin');
     // Brauzer imkoniyatlarini cheklash
-    header('Permissions-Policy: geolocation=(self), microphone=(), camera=()');
+    header('Permissions-Policy: geolocation=(self), microphone=(self), camera=()');
     // Eski brauzerlar uchun XSS filtri
     header('X-XSS-Protection: 1; mode=block');
     // Server signaturasini yashirish
@@ -38,6 +38,7 @@ function security_headers(): void
          . "script-src 'self' 'unsafe-inline' https://unpkg.com; "
          . "connect-src 'self' https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org https://routing.openstreetmap.de https://router.project-osrm.org; "
          . "font-src 'self' data:; "
+         . "media-src 'self' blob: data:; "
          . "object-src 'none'; "
          . "base-uri 'self'; "
          . "form-action 'self'; "
@@ -97,6 +98,127 @@ secure_session_start();
 function e(?string $v): string
 {
     return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+}
+
+/* ============================================================
+ *  FAYL YUKLASH (rasm / ovoz) — local saqlash
+ * ============================================================ */
+
+/** Yuklangan fayllar saqlanadigan absolyut yo'l */
+function upload_dir(string $sub = ''): string
+{
+    $base = dirname(__DIR__) . '/uploads';
+    $path = $sub !== '' ? $base . '/' . trim($sub, '/') : $base;
+    if (!is_dir($path)) {
+        @mkdir($path, 0775, true);
+    }
+    return $path;
+}
+
+/**
+ * Rasmni xavfsiz yuklash. Faqat haqiqiy rasm (jpg/png/webp/gif) qabul qilinadi.
+ * $field - $_FILES kaliti. Muvaffaqiyatda web-yo'l (masalan "/uploads/couriers/abc.jpg") qaytadi.
+ * Fayl bo'lmasa null; xato bo'lsa $err ga yoziladi.
+ */
+function upload_image(string $field, string $sub = 'misc', ?string &$err = null): ?string
+{
+    if (empty($_FILES[$field]) || ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null; // fayl tanlanmagan
+    }
+    $f = $_FILES[$field];
+    if ($f['error'] !== UPLOAD_ERR_OK) {
+        $err = 'Fayl yuklashda xatolik (kod: ' . $f['error'] . ').';
+        return null;
+    }
+    if ($f['size'] > 5 * 1024 * 1024) { // 5 MB
+        $err = 'Rasm hajmi 5 MB dan oshmasligi kerak.';
+        return null;
+    }
+    // Haqiqiy MIME turini tekshirish (kengaytmaga ishonmaymiz)
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime  = $finfo->file($f['tmp_name']);
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/png'  => 'png',
+        'image/webp' => 'webp',
+        'image/gif'  => 'gif',
+    ];
+    if (!isset($allowed[$mime])) {
+        $err = 'Faqat rasm fayllari (JPG, PNG, WEBP, GIF) qabul qilinadi.';
+        return null;
+    }
+    // Rasm haqiqatan ham rasm ekanini qo'shimcha tekshirish
+    if (@getimagesize($f['tmp_name']) === false) {
+        $err = 'Fayl haqiqiy rasm emas.';
+        return null;
+    }
+    $ext  = $allowed[$mime];
+    $name = bin2hex(random_bytes(16)) . '.' . $ext;
+    $dir  = upload_dir($sub);
+    $dest = $dir . '/' . $name;
+    if (!move_uploaded_file($f['tmp_name'], $dest)) {
+        $err = 'Faylni saqlab bo\'lmadi.';
+        return null;
+    }
+    @chmod($dest, 0644);
+    return '/uploads/' . $sub . '/' . $name;
+}
+
+/**
+ * Ovozli xabarni xavfsiz yuklash (ratsiya). Faqat audio (webm/ogg/mp3/m4a/wav).
+ * Muvaffaqiyatda web-yo'l qaytadi.
+ */
+function upload_voice(string $field, ?string &$err = null): ?string
+{
+    if (empty($_FILES[$field]) || ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        $err = 'Ovoz fayli yuklanmadi.';
+        return null;
+    }
+    $f = $_FILES[$field];
+    if ($f['size'] > 8 * 1024 * 1024) { // 8 MB
+        $err = 'Ovoz hajmi 8 MB dan oshmasligi kerak.';
+        return null;
+    }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime  = $finfo->file($f['tmp_name']);
+    $allowed = [
+        'audio/webm' => 'webm', 'video/webm' => 'webm',
+        'audio/ogg'  => 'ogg',
+        'audio/mpeg' => 'mp3',
+        'audio/mp4'  => 'm4a', 'audio/x-m4a' => 'm4a',
+        'audio/wav'  => 'wav', 'audio/x-wav' => 'wav',
+    ];
+    if (!isset($allowed[$mime])) {
+        $err = 'Noto\'g\'ri audio format.';
+        return null;
+    }
+    $ext  = $allowed[$mime];
+    $name = bin2hex(random_bytes(16)) . '.' . $ext;
+    $dir  = upload_dir('voice');
+    $dest = $dir . '/' . $name;
+    if (!move_uploaded_file($f['tmp_name'], $dest)) {
+        $err = 'Ovozni saqlab bo\'lmadi.';
+        return null;
+    }
+    @chmod($dest, 0644);
+    return '/uploads/voice/' . $name;
+}
+
+/**
+ * Rasm manbasini aniqlash: avval yuklangan fayl (image), bo'lmasa URL (image_url).
+ * Tahrirlashda eski qiymat ($current) saqlanadi.
+ */
+function resolve_image_input(string $fileField, string $urlField, string $sub, string $current = '', ?string &$err = null): string
+{
+    $uploaded = upload_image($fileField, $sub, $err);
+    if ($uploaded !== null) {
+        return $uploaded;
+    }
+    $url = trim($_POST[$urlField] ?? '');
+    if ($url !== '') {
+        return $url;
+    }
+    return $current; // o'zgarmagan
 }
 
 /** Narxni chiroyli formatda chiqarish: 28000 -> "28 000 so'm" */
@@ -721,6 +843,7 @@ function icon(string $name, int $size = 22): string
         'trophy'   => '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/>',
         'flame'    => '<path d="M12 2s4 4 4 9a4 4 0 0 1-8 0c0-1 .5-2 .5-2S6 11 6 14a6 6 0 0 0 12 0c0-5-6-12-6-12Z"/>',
         'phone-call'=> '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/>',
+        'mic'      => '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/>',
     ];
     $p = $paths[$name] ?? $paths['box'];
     return '<svg class="ic" width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" '

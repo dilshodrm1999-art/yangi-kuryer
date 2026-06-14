@@ -1,0 +1,18 @@
+# uploads/ — yuklangan rasm va ovozli xabarlar
+# PHP va boshqa skriptlarni bu yerda ISHGA TUSHIRISHNI taqiqlaymiz (xavfsizlik)
+php_flag engine off
+<FilesMatch "\.(php|php3|php4|php5|php7|phtml|pl|py|cgi|sh|asp|aspx|js)$">
+    Require all denied
+</FilesMatch>
+
+# Faqat rasm va audio fayllarga ruxsat
+<FilesMatch "\.(jpg|jpeg|png|webp|gif|webm|ogg|mp3|m4a|wav)$">
+    Require all granted
+</FilesMatch>
+
+Options -Indexes -ExecCGI
+AddType image/jpeg .jpg .jpeg
+AddType image/png .png
+AddType image/webp .webp
+AddType audio/webm .webm
+AddType audio/ogg .ogg

@@ -13,9 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id       = (int)($_POST['id'] ?? 0);
         $name     = trim($_POST['name'] ?? '');
         $desc     = trim($_POST['description'] ?? '');
-        $image    = trim($_POST['image'] ?? '');
-        $logo     = trim($_POST['logo'] ?? '');
-        $cover    = trim($_POST['cover'] ?? '');
         $theme    = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['theme_color'] ?? '') ? $_POST['theme_color'] : '#ff6b35';
         $address  = trim($_POST['address'] ?? '');
         $phone    = trim($_POST['phone'] ?? '');
@@ -26,6 +23,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $discount = max(0, min(100, (float)($_POST['discount_percent'] ?? 0)));
         $active   = isset($_POST['is_active']) ? 1 : 0;
         $ownerId  = (int)($_POST['owner_id'] ?? 0) ?: null;
+
+        // Mavjud rasmlar (tahrirlashda saqlash uchun)
+        $curImg = $curLogo = $curCover = '';
+        if ($id) {
+            $g = db()->prepare('SELECT image, logo, cover FROM stores WHERE id=?');
+            $g->execute([$id]); $cur = $g->fetch() ?: [];
+            $curImg = $cur['image'] ?? ''; $curLogo = $cur['logo'] ?? ''; $curCover = $cur['cover'] ?? '';
+        }
+        // Rasm: local fayl yoki URL
+        $upErr = null;
+        $image = resolve_image_input('image_file', 'image', 'stores', $curImg, $upErr);
+        if ($upErr) $errors[] = 'Rasm: ' . $upErr;
+        $logo  = resolve_image_input('logo_file',  'logo',  'stores', $curLogo, $upErr);
+        if ($upErr) $errors[] = 'Logo: ' . $upErr;
+        $cover = resolve_image_input('cover_file', 'cover', 'stores', $curCover, $upErr);
+        if ($upErr) $errors[] = 'Banner: ' . $upErr;
 
         // Ish kunlari (massiv -> "1,2,3")
         $days = array_filter(array_map('intval', (array)($_POST['work_days'] ?? [])), fn($d) => $d >= 1 && $d <= 7);
@@ -126,7 +139,7 @@ require __DIR__ . '/../includes/header.php';
 <div class="admin-layout">
     <div class="card form-card">
         <h2><?= $edit ? icon('edit',18).' Tahrirlash' : icon('plus',18).' Yangi do\'kon' ?></h2>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="save">
             <input type="hidden" name="id" value="<?= $edit['id'] ?? 0 ?>">
@@ -135,9 +148,24 @@ require __DIR__ . '/../includes/header.php';
             <label class="field"><span>Tavsif</span><textarea name="description" rows="2"><?= e($edit['description'] ?? '') ?></textarea></label>
 
             <h3 class="form-sub"><?= icon('palette',16) ?> Brending</h3>
-            <label class="field"><span>Logotip URL</span><input type="text" name="logo" value="<?= e($edit['logo'] ?? '') ?>" placeholder="https://... (logo)"></label>
-            <label class="field"><span>Sarlavha (cover) rasmi URL</span><input type="text" name="cover" value="<?= e($edit['cover'] ?? '') ?>" placeholder="https://... (banner)"></label>
-            <label class="field"><span>Asosiy rasm URL</span><input type="text" name="image" value="<?= e($edit['image'] ?? '') ?>" placeholder="https://..."></label>
+            <div class="upload-field">
+                <span class="upload-label"><?= icon('image',15) ?> Logotip</span>
+                <div class="img-preview <?= !empty($edit['logo']) ? 'has' : '' ?>" id="prevLogo" style="<?= !empty($edit['logo']) ? "background-image:url('".e($edit['logo'])."')" : '' ?>"></div>
+                <input type="file" name="logo_file" accept="image/*" class="js-file" data-preview="prevLogo">
+                <input type="text" name="logo" value="<?= e($edit['logo'] ?? '') ?>" placeholder="yoki logo URL">
+            </div>
+            <div class="upload-field">
+                <span class="upload-label"><?= icon('image',15) ?> Sarlavha (banner)</span>
+                <div class="img-preview wide <?= !empty($edit['cover']) ? 'has' : '' ?>" id="prevCover" style="<?= !empty($edit['cover']) ? "background-image:url('".e($edit['cover'])."')" : '' ?>"></div>
+                <input type="file" name="cover_file" accept="image/*" class="js-file" data-preview="prevCover">
+                <input type="text" name="cover" value="<?= e($edit['cover'] ?? '') ?>" placeholder="yoki banner URL">
+            </div>
+            <div class="upload-field">
+                <span class="upload-label"><?= icon('image',15) ?> Asosiy rasm</span>
+                <div class="img-preview <?= !empty($edit['image']) ? 'has' : '' ?>" id="prevImg" style="<?= !empty($edit['image']) ? "background-image:url('".e($edit['image'])."')" : '' ?>"></div>
+                <input type="file" name="image_file" accept="image/*" class="js-file" data-preview="prevImg">
+                <input type="text" name="image" value="<?= e($edit['image'] ?? '') ?>" placeholder="yoki rasm URL">
+            </div>
             <label class="field"><span>Do'kon rangi (theme)</span><input type="color" name="theme_color" value="<?= e($edit['theme_color'] ?? '#ff6b35') ?>" style="height:44px;padding:4px"></label>
 
             <h3 class="form-sub"><?= icon('user',16) ?> Egasi (do'kon paneliga kiradi)</h3>
@@ -272,4 +300,5 @@ require __DIR__ . '/../includes/header.php';
   setTimeout(function(){map.invalidateSize();},300);
 })();
 </script>
+<script src="/assets/js/admin-uploads.js"></script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>
