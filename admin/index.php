@@ -53,16 +53,7 @@ require __DIR__ . '/../includes/header.php';
 ?>
 <div id="admin-map" class="live-map" style="height:340px"
      data-lat="<?= $mLat ?>" data-lng="<?= $mLng ?>" data-zoom="<?= $mZoom ?>"></div>
-<p class="muted small" style="margin-top:8px">Xarita har 5 soniyada yangilanadi. Kuryer ustiga bosib ovozli xabar (ratsiya) yuborishingiz mumkin.</p>
-
-<!-- Ratsiya: ovozli xabar yuborish -->
-<div class="voice-panel">
-    <span><?= icon('mic',16) ?> Ratsiya:</span>
-    <span class="sel-courier" id="selCourier">Xaritadan kuryer tanlang</span>
-    <button type="button" class="ptt-btn" id="adminPtt" style="width:52px;height:52px" disabled title="Bosib turing va gapiring"><?= icon('mic',22) ?></button>
-    <span class="ptt-status" id="adminPttStatus"></span>
-</div>
-<div class="voice-inbox" id="voiceInbox"></div>
+<p class="muted small" style="margin-top:8px">Xarita har 5 soniyada yangilanadi. Kuryer ustiga bosib <a href="/admin/ratsiya.php">ratsiya orqali</a> gaplashishingiz mumkin.</p>
 
 <h2 class="sub"><?= icon('clock',18) ?> So'nggi buyurtmalar</h2>
 <div class="table-wrap">

@@ -38,6 +38,7 @@ if ($u) {
             ['/admin/products.php', 'package',  'Mahsulot'],
             ['/admin/couriers.php', 'truck',    'Kuryer'],
             ['/admin/customers.php','user',     'Mijoz'],
+            ['/admin/ratsiya.php',  'mic',      'Ratsiya'],
             ['/admin/stats.php',    'chart',    'Hisobot'],
             ['/admin/settings.php', 'settings', 'Sozlama'],
         ];

@@ -165,10 +165,16 @@ require __DIR__ . '/_card.php';
 
 <!-- Ratsiya: admin bilan ovozli aloqa -->
 <div class="ratsiya-card">
-    <h2><?= icon('mic',18) ?> Ratsiya (admin bilan aloqa)</h2>
-    <div class="ptt-wrap">
-        <button type="button" class="ptt-btn" id="courierPtt" title="Bosib turing va gapiring"><?= icon('mic',34) ?></button>
-        <span class="ptt-hint">Bosib turing va gapiring — admin eshitadi</span>
+    <div class="rc-mic-wrap">
+        <button type="button" class="mic-btn" id="courierPtt" aria-label="Gapirish">
+            <span class="mic-ring"></span>
+            <span class="mic-ring r2"></span>
+            <span class="mic-core"><?= icon('mic',30) ?></span>
+        </button>
+    </div>
+    <div class="rc-mic-text">
+        <strong>Ratsiya</strong>
+        <span class="ptt-hint" id="courierPttHint">Gapirish uchun bosib turing</span>
         <span class="ptt-status" id="courierPttStatus"></span>
     </div>
 </div>

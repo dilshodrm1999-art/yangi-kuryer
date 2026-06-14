@@ -47,8 +47,8 @@
           var popup = '<strong>' + c.short_id + ' · ' + escapeHtml(c.name) + '</strong><br>'
                     + '📞 ' + escapeHtml(c.phone) + '<br>'
                     + '📦 ' + c.active_orders + ' ta aktiv buyurtma<br>'
-                    + '<button class="btn sm primary" style="margin-top:6px" '
-                    + 'onclick="window.selectCourierForVoice(' + c.id + ',\'' + escapeHtml(c.name) + '\')">🎙 Ovozli xabar</button>';
+                    + '<a class="btn sm primary" style="margin-top:6px;color:#fff" '
+                    + 'href="/admin/ratsiya.php?courier_id=' + c.id + '">🎙 Ratsiya orqali gaplashish</a>';
           if (markers[c.id]) {
             markers[c.id].setLatLng([c.lat, c.lng]).setIcon(makeIcon(c)).setPopupContent(popup);
           } else {
