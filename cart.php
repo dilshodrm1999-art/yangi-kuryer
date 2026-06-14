@@ -148,6 +148,7 @@ require __DIR__ . '/includes/header.php';
                 <div id="map"></div>
                 <input type="hidden" name="lat" id="lat">
                 <input type="hidden" name="lng" id="lng">
+                <input type="hidden" name="route_km" id="route_km">
                 <p class="coords" id="coords">Koordinata tanlanmagan</p>
             </div>
 
@@ -216,6 +217,7 @@ window.PICKUP = {lat: <?= $pickupLat ?>, lng: <?= $pickupLng ?>, name: <?= json_
   // map.js real yo'l masofasini hisoblaganda chaqiradi (km = yo'l masofasi)
   window.onRouteResult=function(km,lat,lng){
     if(km===null||isNaN(km)) return;
+    var rk=document.getElementById('route_km'); if(rk) rk.value=km.toFixed(2);
     var inCity=inPoly(lat,lng);
     var perKm=inCity?PRICE_IN:PRICE_OUT;
     lastFee=Math.max(Math.round(km*perKm/100)*100, MIN_FEE);

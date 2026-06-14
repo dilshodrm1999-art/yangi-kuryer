@@ -1,14 +1,33 @@
 <?php
 /**
  * Ma'lumotlar bazasiga ulanish (PDO / MySQL)
- * Sozlamalarni o'z serveringizga moslang.
+ *
+ * XAVFSIZLIK: maxfiy ma'lumotlarni (parol) to'g'ridan-to'g'ri shu faylga
+ * yozmang. Eng yaxshi yo'l — config/local.php fayli (u .gitignore'da,
+ * git'ga tushmaydi). Agar u mavjud bo'lsa, undagi qiymatlar ishlatiladi.
+ *
+ * config/local.php namunasi:
+ *   <?php
+ *   return [
+ *     'host' => 'sql310.infinityfree.com',
+ *     'port' => '3306',
+ *     'name' => 'if0_42103004_kuryer',
+ *     'user' => 'if0_42103004',
+ *     'pass' => 'YANGI_PAROL',
+ *   ];
  */
 
-define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-define('DB_PORT', getenv('DB_PORT') ?: '3306');
-define('DB_NAME', getenv('DB_NAME') ?: 'dostavka');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
+$localCfg = [];
+if (is_file(__DIR__ . '/local.php')) {
+    $localCfg = require __DIR__ . '/local.php';
+    if (!is_array($localCfg)) { $localCfg = []; }
+}
+
+define('DB_HOST', getenv('DB_HOST') ?: ($localCfg['host'] ?? 'sql310.infinityfree.com'));
+define('DB_PORT', getenv('DB_PORT') ?: ($localCfg['port'] ?? '3306'));
+define('DB_NAME', getenv('DB_NAME') ?: ($localCfg['name'] ?? 'if0_42103004_kuryer'));
+define('DB_USER', getenv('DB_USER') ?: ($localCfg['user'] ?? 'if0_42103004'));
+define('DB_PASS', getenv('DB_PASS') ?: ($localCfg['pass'] ?? ''));
 
 function db(): PDO
 {

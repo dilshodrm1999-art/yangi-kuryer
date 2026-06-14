@@ -31,9 +31,20 @@ $pickupLng = $pickup['lng'] ?? (float)setting('store_lng', 69.240562);
 // Zona (shahar ichi / tashqarisi) va masofa (do'kondan mijozgacha)
 // Masofa velosiped yo'l harakatiga ko'ra (real yo'l) hisoblanadi.
 $zone = delivery_zone($lat, $lng);
+$clientKm = isset($_POST['route_km']) ? (float)$_POST['route_km'] : 0.0;
+
 if ($lat !== null && $lng !== null && $pickupLat !== null && $pickupLng !== null) {
-    $route    = route_distance_km($pickupLat, $pickupLng, $lat, $lng);
-    $distance = $route['km'];
+    // 1) Brauzer (xarita) hisoblagan real yo'l masofasi bo'lsa — o'shani ishlatamiz.
+    //    (InfinityFree kabi xostinglar tashqi so'rovni bloklaydi, shuning uchun
+    //     server tomonda OSRM ishlamasligi mumkin — brauzerники ishonchliroq.)
+    $straight = haversine_km($pickupLat, $pickupLng, $lat, $lng);
+    if ($clientKm >= $straight && $clientKm <= $straight * 3) {
+        $distance = round($clientKm, 2);
+    } else {
+        // 2) Aks holda server tomonda urinib ko'ramiz (ishlamasa haversine*1.3)
+        $route    = route_distance_km($pickupLat, $pickupLng, $lat, $lng);
+        $distance = $route['km'];
+    }
 } else {
     $distance = 0.0;
 }
