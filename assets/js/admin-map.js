@@ -3,9 +3,9 @@
   var el = document.getElementById('admin-map');
   if (!el || typeof L === 'undefined') return;
 
-  var startLat = parseFloat(el.dataset.lat) || 41.311081;
-  var startLng = parseFloat(el.dataset.lng) || 69.240562;
-  var startZoom = parseInt(el.dataset.zoom, 10) || 12;
+  var startLat = parseFloat(el.dataset.lat) || 39.509868;
+  var startLng = parseFloat(el.dataset.lng) || 63.85389;
+  var startZoom = parseInt(el.dataset.zoom, 10) || 13;
 
   var map = L.map(el, { zoomControl: true }).setView([startLat, startLng], startZoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

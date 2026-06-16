@@ -137,12 +137,25 @@ INSERT IGNORE INTO settings (skey, svalue) VALUES
   ('min_fee',        '5000'),
   ('commission_percent', '20'),
   ('cashback_percent', '0'),
-  ('region',         'Toshkent shahri'),
-  ('district',       ''),
-  ('map_lat',        '41.3111000'),
-  ('map_lng',        '69.2797000'),
-  ('map_zoom',       '12'),
+  ('region',         'Buxoro viloyati'),
+  ('district',       'Qorako\'l'),
+  ('map_lat',        '39.5098680'),
+  ('map_lng',        '63.8538900'),
+  ('map_zoom',       '13'),
   ('city_polygon',   '[]');
+
+-- ------------------------------------------------------------
+-- Xarita markazini Toshkentdan Qorako'l (Buxoro viloyati)ga ko'chirish.
+-- FAQAT eski Toshkent qiymati saqlangan bo'lsa o'zgaradi — admin o'zi
+-- belgilagan boshqa joy bo'lsa, unga TEGMAYDI.
+-- ------------------------------------------------------------
+UPDATE settings SET svalue = '39.5098680' WHERE skey = 'map_lat'   AND svalue IN ('41.3111000','41.3111');
+UPDATE settings SET svalue = '63.8538900' WHERE skey = 'map_lng'   AND svalue IN ('69.2797000','69.2797');
+UPDATE settings SET svalue = '13'         WHERE skey = 'map_zoom'  AND svalue = '12';
+UPDATE settings SET svalue = 'Buxoro viloyati' WHERE skey = 'region' AND svalue = 'Toshkent shahri';
+UPDATE settings SET svalue = 'Qorako\'l'  WHERE skey = 'district' AND svalue = '';
+UPDATE settings SET svalue = '39.5098680' WHERE skey = 'store_lat' AND svalue IN ('41.3110810','41.311081');
+UPDATE settings SET svalue = '63.8538900' WHERE skey = 'store_lng' AND svalue IN ('69.2405620','69.240562');
 
 -- ------------------------------------------------------------
 -- Tozalash

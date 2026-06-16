@@ -225,16 +225,16 @@ INSERT INTO settings (skey, svalue) VALUES
   ('price_in_city',  '8000'),
   ('price_out_city', '15000'),
   ('store_name',   'Asosiy ombor'),
-  ('store_lat',    '41.3110810'),
-  ('store_lng',    '69.2405620'),
+  ('store_lat',    '39.5098680'),
+  ('store_lng',    '63.8538900'),
   ('min_fee',      '5000'),
   ('commission_percent', '20'),
   ('cashback_percent', '0'),
-  ('region',       'Toshkent shahri'),
-  ('district',     ''),
-  ('map_lat',      '41.3111000'),
-  ('map_lng',      '69.2797000'),
-  ('map_zoom',     '12'),
+  ('region',       'Buxoro viloyati'),
+  ('district',     'Qorako\'l'),
+  ('map_lat',      '39.5098680'),
+  ('map_lng',      '63.8538900'),
+  ('map_zoom',     '13'),
   ('city_polygon', '[]');
 
 -- Parol barchasi uchun: "12345"

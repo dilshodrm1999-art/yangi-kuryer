@@ -3,8 +3,8 @@
   var mapEl = document.getElementById('map');
   if (!mapEl || typeof L === 'undefined') return;
 
-  var def = [41.311081, 69.240562]; // Toshkent
-  var map = L.map('map', { zoomControl: true }).setView(def, 12);
+  var def = [39.509868, 63.85389]; // Qorako'l (Buxoro viloyati)
+  var map = L.map('map', { zoomControl: true }).setView(def, 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '© OpenStreetMap'
   }).addTo(map);

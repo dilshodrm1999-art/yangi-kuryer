@@ -47,9 +47,9 @@ require __DIR__ . '/../includes/header.php';
 
 <h2 class="sub"><?= icon('pin',18) ?> Kuryerlar jonli xaritada (<span id="liveCount">0</span>)</h2>
 <?php
-  $mLat = (float)setting('map_lat', 41.311081);
-  $mLng = (float)setting('map_lng', 69.240562);
-  $mZoom = (int)setting('map_zoom', 12);
+  $mLat = (float)setting('map_lat', 39.5098680);
+  $mLng = (float)setting('map_lng', 63.8538900);
+  $mZoom = (int)setting('map_zoom', 13);
 ?>
 <div id="admin-map" class="live-map" style="height:340px"
      data-lat="<?= $mLat ?>" data-lng="<?= $mLng ?>" data-zoom="<?= $mZoom ?>"></div>

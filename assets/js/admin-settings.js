@@ -17,7 +17,7 @@
   var modeInfo = document.getElementById('modeInfo');
 
   // --- Xarita ---
-  var map = L.map('map').setView([INIT.mapLat || 41.3111, INIT.mapLng || 69.2797], INIT.mapZoom || 12);
+  var map = L.map('map').setView([INIT.mapLat || 39.509868, INIT.mapLng || 63.85389], INIT.mapZoom || 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '\u00a9 OpenStreetMap'
   }).addTo(map);
@@ -37,7 +37,7 @@
   }
 
   // --- Ombor markeri ---
-  var storeMarker = L.marker([INIT.storeLat || 41.311081, INIT.storeLng || 69.240562], {
+  var storeMarker = L.marker([INIT.storeLat || 39.509868, INIT.storeLng || 63.85389], {
     draggable: true, title: 'Ombor'
   }).addTo(map).bindPopup('📦 Ombor');
 

@@ -10,11 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action  = $_POST['action'] ?? '';
     $pdo = db();
 
-    // GPS majburiy: kuryer joylashuvi yangilanmagan bo'lsa hech qanday amal bajarilmaydi
-    if (!courier_gps_fresh($me)) {
-        $_SESSION['flash_err'] = "Geolokatsiya o'chiq. Tizimda ishlash uchun GPS'ni yoqing.";
-        redirect('/courier/index.php');
-    }
+    // Eslatma: buyurtmani qabul qilish, "oldim", "yo'ldaman" amallari uchun GPS
+    // majburiy EMAS — kuryer qayerda bo'lishidan qat'i nazar buyurtmani oladi.
+    // Faqat "Yetkazdim" (delivered) tasdig'ida mijoz manziliga yaqinlik tekshiriladi.
 
     if ($action === 'accept') {
         // Kuryer band bo'lsa (aktiv buyurtmasi bo'lsa) yangi qabul qila olmaydi
@@ -63,13 +61,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$orderId, $me['id']]);
             $order = $stmt->fetch();
             if ($order) {
-                // "Yetkazdim" faqat mijoz manziliga 20m yaqinlikda tasdiqlanadi
-                if ($status === 'delivered') {
-                    $cLat = isset($_POST['cur_lat']) ? (float)$_POST['cur_lat'] : null;
-                    $cLng = isset($_POST['cur_lng']) ? (float)$_POST['cur_lng'] : null;
-                    if ($cLat === null || $cLng === null || $order['lat'] === null || $order['lng'] === null) {
+                // "Yetkazdim" faqat mijoz manziliga belgilangan radius (30m) ichida tasdiqlanadi.
+                // Agar buyurtmada mijoz manzili koordinatasi belgilanmagan bo'lsa —
+                // yaqinlikni tekshirib bo'lmaydi, shuning uchun kuryerga yopishga ruxsat beriladi.
+                if ($status === 'delivered'
+                    && $order['lat'] !== null && $order['lng'] !== null) {
+                    $cLat = isset($_POST['cur_lat']) && $_POST['cur_lat'] !== '' ? (float)$_POST['cur_lat'] : null;
+                    $cLng = isset($_POST['cur_lng']) && $_POST['cur_lng'] !== '' ? (float)$_POST['cur_lng'] : null;
+                    if ($cLat === null || $cLng === null) {
                         $pdo->rollBack();
-                        $_SESSION['flash_err'] = "Joylashuv aniqlanmadi. GPS yoqilganini tekshiring.";
+                        $_SESSION['flash_err'] = "Joylashuv aniqlanmadi. Yetkazishni tasdiqlash uchun GPS'ni yoqing.";
                         redirect('/courier/index.php');
                     }
                     $dist = distance_meters($cLat, $cLng, $order['lat'], $order['lng']);
@@ -155,9 +156,9 @@ require __DIR__ . '/_card.php';
     </div>
 </section>
 
-<!-- GPS majburiy ogohlantirishi (geolokatsiya o'chiq bo'lsa) -->
-<div id="gpsRequired" class="alert error" style="<?= $gpsFresh ? 'display:none' : '' ?>">
-    <?= icon('nav',16) ?> <strong>Geolokatsiya o'chiq.</strong> Tizimda ishlash uchun GPS'ni yoqing — aks holda buyurtma qabul qilish va yetkazishni tasdiqlab bo'lmaydi.
+<!-- GPS holati: faqat "Yetkazdim" tasdig'i uchun kerak (qabul qilishga to'sqinlik qilmaydi) -->
+<div id="gpsRequired" class="alert info" style="<?= $gpsFresh ? 'display:none' : '' ?>">
+    <?= icon('nav',16) ?> <strong>Geolokatsiya o'chiq.</strong> Buyurtma qabul qilish ishlaydi, lekin "Yetkazdim" deb tasdiqlash uchun manzilga yetganda GPS'ni yoqing.
 </div>
 
 <?php if ($flashErr): ?><div class="alert error"><?= icon('x',16) ?> <?= e($flashErr) ?></div><?php endif; ?>

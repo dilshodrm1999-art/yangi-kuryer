@@ -48,8 +48,8 @@ if ($cart) {
     }
 }
 
-$storeLat = (float)setting('store_lat', 41.311081);
-$storeLng = (float)setting('store_lng', 69.240562);
+$storeLat = (float)setting('store_lat', 39.5098680);
+$storeLng = (float)setting('store_lng', 63.8538900);
 $priceIn  = (float)setting('price_in_city', setting('price_per_km', 8000));
 $priceOut = (float)setting('price_out_city', 15000);
 $minFee   = (float)setting('min_fee', 0);

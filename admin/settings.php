@@ -58,14 +58,14 @@ $minFee     = (float)setting('min_fee', 0);
 $commission = (float)setting('commission_percent', 20);
 $cashbackPct = (float)setting('cashback_percent', 0);
 $storeName = setting('store_name', 'Ombor');
-$storeLat  = (float)setting('store_lat', 41.311081);
-$storeLng  = (float)setting('store_lng', 69.240562);
+$storeLat  = (float)setting('store_lat', 39.5098680);
+$storeLng  = (float)setting('store_lng', 63.8538900);
 
-$region    = setting('region', 'Toshkent shahri');
-$district  = setting('district', '');
-$mapLat    = (float)setting('map_lat', 41.3111);
-$mapLng    = (float)setting('map_lng', 69.2797);
-$mapZoom   = (int)setting('map_zoom', 12);
+$region    = setting('region', 'Buxoro viloyati');
+$district  = setting('district', 'Qorako\'l');
+$mapLat    = (float)setting('map_lat', 39.5098680);
+$mapLng    = (float)setting('map_lng', 63.8538900);
+$mapZoom   = (int)setting('map_zoom', 13);
 $cityPoly  = setting('city_polygon', '[]');
 
 $regions = uz_regions();

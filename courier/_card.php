@@ -74,7 +74,7 @@ if (!function_exists('courier_card')) {
                             <button class="btn primary block"><?= icon('truck',16) ?> Yo'ldaman</button>
                         </form>
                     <?php elseif ($o['status'] === 'on_way'): ?>
-                        <!-- Yetkazdim: joriy GPS koordinatasi yuboriladi, server 20m ichida ekanini tekshiradi -->
+                        <!-- Yetkazdim: joriy GPS koordinatasi yuboriladi, server 30m ichida ekanini tekshiradi -->
                         <form method="post" class="grow js-deliver-form"
                               data-dest-lat="<?= e($o['lat']) ?>" data-dest-lng="<?= e($o['lng']) ?>"><?= csrf_field() ?>
                             <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">

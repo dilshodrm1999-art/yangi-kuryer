@@ -456,7 +456,7 @@ function status_color(string $s): string
 /* ---------- Kuryer: GPS va yetkazib berish nazorati ---------- */
 
 /** Yetkazib berishni tasdiqlash uchun ruxsat etilgan masofa (metr) */
-const DELIVERY_RADIUS_M = 20;
+const DELIVERY_RADIUS_M = 30;
 
 /** Kuryer GPS'i "yangi" (so'nggi N soniyada yangilangan) deb hisoblanadimi? */
 function courier_gps_fresh(?array $courier, int $maxAgeSec = 120): bool

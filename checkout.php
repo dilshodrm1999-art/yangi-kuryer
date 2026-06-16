@@ -25,8 +25,8 @@ if ($address === '') {
 // Olish nuqtasi (do'kon manzili) — savatdagi do'konga qarab aniqlanadi.
 // Mahsulot do'konga bog'langan bo'lsa, o'sha do'kon koordinatasidan hisoblanadi.
 $pickup    = resolve_pickup(array_keys($cart));
-$pickupLat = $pickup['lat'] ?? (float)setting('store_lat', 41.311081);
-$pickupLng = $pickup['lng'] ?? (float)setting('store_lng', 69.240562);
+$pickupLat = $pickup['lat'] ?? (float)setting('store_lat', 39.5098680);
+$pickupLng = $pickup['lng'] ?? (float)setting('store_lng', 63.8538900);
 
 // Zona (shahar ichi / tashqarisi) va masofa (do'kondan mijozgacha)
 // Masofa velosiped yo'l harakatiga ko'ra (real yo'l) hisoblanadi.
